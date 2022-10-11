@@ -1,6 +1,8 @@
 import numpy as np
 
-INITIAL_BOARD_SETUP = [
+from figures import build_figure_maps, Colour
+
+INITIAL_5_5_BOARD_SETUP = [
     "r Ea5", "n Eb5", "k Ec5", "n Ed5", "r Ee5",
     "b Da5", "u Db5", "q Dc5", "b Dd5", "u De5",
     "p Ea4", "p Eb4", "p Ec4", "p Ed4", "p Ee4",
@@ -15,19 +17,44 @@ INITIAL_BOARD_SETUP = [
 
 class ChessBoard:
 
-    def __init__(self, setup):
-        self.cube = np.zeros((5, 5, 5), dtype=np.byte, order='C')
+    def __init__(self, board_size, setup):
+        self.size = board_size
+        self.cube = np.zeros((self.size, self.size, self.size), dtype=np.byte, order='C')
+        self.figure_id_map, self.figure_name_map = build_figure_maps()
         for str in setup:
             fig_name, pos_code = str.split(" ")
-            self._add(fig_name, ChessBoard.get_pos_coord(pos_code))
-        # self.positions = {} # encodes a char into a 3-tuple of board positions (i.e. a look-up table)
-        # print(self.cube)
+            figure, colour = self.figure_name_map[fig_name]
+            pos = ChessBoard.get_pos_coord(pos_code)
+            self._add(figure, colour, pos)
 
-    def _add(self, figure_name, pos):
-        self.cube[pos] = ord(figure_name)
+    def __getitem__(self, key):
+        # TODO implement rigurous input checking
+        if type(key) == str:
+            return self.cube[ChessBoard.get_pos_coord(key)]
+        elif type(key) == tuple:
+            return self.cube[key]
+        elif type(key) == int:
+            return self.cube[key]
+        else:
+            raise KeyError(f"Key must be tuple or str, not {type(key)}")
 
-    def get_figure(self, pos):
-        chr(self.cube[pos])
+    def __setitem__(self, key, value):
+        # TODO implement rigurous input checking
+        if type(key) == str:
+            self.cube[ChessBoard.get_pos_coord(key)] = value
+        elif type(key) == tuple:
+            self.cube[key] = value
+        elif type(key) == int:
+            self.cube[key] = value
+        else:
+            raise KeyError(f"Key must be tuple or str, not {type(key)}")
+
+    def _add(self, figure, colour, pos):
+        self[pos] = figure.id * colour
+
+    @staticmethod
+    def get_figure(self, figure_name):
+        pass
 
     @staticmethod
     def get_pos_code(pos_coord):
@@ -36,8 +63,10 @@ class ChessBoard:
 
     @staticmethod
     def get_pos_coord(pos_code):
+        # On a chess board, rank(row) and file(column) are used in the inverted way w.r.t array notation
+        # Therefore, the array is indexed by [plane, file, rank]
         plane, rank, file = pos_code
         return (ord(plane) - ord('A'), int(file)-1, ord(rank) - ord('a'))
 
 
-ChessBoard(INITIAL_BOARD_SETUP)
+board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
