@@ -28,7 +28,7 @@ class ChessBoard:
             self._add(figure, colour, pos)
 
     def __getitem__(self, key):
-        # TODO implement rigurous input checking
+        # TODO implement rigurous input checking for key
         if type(key) == str:
             return self.cube[ChessBoard.get_pos_coord(key)]
         elif type(key) == tuple:
@@ -39,7 +39,7 @@ class ChessBoard:
             raise KeyError(f"Key must be tuple or str, not {type(key)}")
 
     def __setitem__(self, key, value):
-        # TODO implement rigurous input checking
+        # TODO implement rigurous input checking for key & value
         if type(key) == str:
             self.cube[ChessBoard.get_pos_coord(key)] = value
         elif type(key) == tuple:
@@ -51,10 +51,6 @@ class ChessBoard:
 
     def _add(self, figure, colour, pos):
         self[pos] = figure.id * colour
-
-    @staticmethod
-    def get_figure(self, figure_name):
-        pass
 
     @staticmethod
     def get_pos_code(pos_coord):

@@ -1,10 +1,7 @@
 import numpy as np
 import math
 
-from board import ChessBoard, INITIAL_5_5_BOARD_SETUP
 from figures import Colour
-
-# print("In module products __package__, __name__ ==", __package__, __name__)
 
 
 
@@ -43,7 +40,3 @@ def render_ascii(chess_board):
         canvas[i*v_dist, i*h_dist+2+math.floor(len(" ".join(cb.size*"."))/2)] = ord('A')+(cb.size-1-i)
 
     print(np.array2string(canvas, max_line_width=math.ceil(1.5*canvas.shape[1]), separator='', formatter={'int':lambda x: "·" if x == 0 else chr(x)}, threshold=math.ceil(1.5*canvas.shape[0]*canvas.shape[1])).replace(" [", 5*' ').replace("[[", 5*' ').replace("]", ""))
-
-board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
-
-render_ascii(board)
