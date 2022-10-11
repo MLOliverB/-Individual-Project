@@ -5,7 +5,7 @@ from figures import Colour
 
 
 
-def render_ascii(chess_board):
+def render_board_ascii(chess_board):
     cb = chess_board
     s = np.array(cb.cube)
     for pos in [(i, j, k) for i in range(cb.size) for j in range(cb.size) for k in range(cb.size)]:
@@ -40,3 +40,6 @@ def render_ascii(chess_board):
         canvas[i*v_dist, i*h_dist+2+math.floor(len(" ".join(cb.size*"."))/2)] = ord('A')+(cb.size-1-i)
 
     print(np.array2string(canvas, max_line_width=math.ceil(1.5*canvas.shape[1]), separator='', formatter={'int':lambda x: "·" if x == 0 else chr(x)}, threshold=math.ceil(1.5*canvas.shape[0]*canvas.shape[1])).replace(" [", 5*' ').replace("[[", 5*' ').replace("]", ""))
+
+def render_figure_moves_ascii(chess_board, figure_pos):
+    pass

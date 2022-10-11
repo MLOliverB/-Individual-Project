@@ -1,6 +1,7 @@
 import numpy as np
 
-from figures import build_figure_maps, Colour
+from figures import build_figure_maps, Colour, Pawn
+from render import render_board_ascii
 
 INITIAL_5_5_BOARD_SETUP = [
     "r Ea5", "n Eb5", "k Ec5", "n Ed5", "r Ee5",
@@ -26,6 +27,55 @@ class ChessBoard:
             figure, colour = self.figure_name_map[fig_name]
             pos = ChessBoard.get_pos_coord(pos_code)
             self._add(figure, colour, pos)
+
+    def get_figure_moves(self, figure_pos):
+        if self[figure_pos] == 0:
+            return ([], [])
+        figure, colour = self.figure_id_map[self[figure_pos]]
+        plane, file, rank = figure_pos
+        moves = []
+        captures = []
+
+        # iterate over passive moves
+        for move in figure.moves:
+            x = 1
+            pv, fv, rv, next_x = move(x, colour)
+            while self._in_bounds(plane+pv, file+fv, rank+rv) and self[plane+pv, file+fv, rank+rv] == 0:
+                moves.append((plane+pv, file+fv, rank+rv))
+                if not next_x:
+                    break
+                x = next_x
+                pv, fv, rv, next_x = move(x, colour)
+
+        # iterate over capture moves
+        for move in figure.captures:
+            x = 1
+            pv, fv, rv, next_x = move(x, colour)
+            while self._in_bounds(plane+pv, file+fv, rank+rv) and self[plane+pv, file+fv, rank+rv] != 0 and self.figure_id_map[self[plane+pv, file+fv, rank+rv]][1] == -colour:
+                captures.append((plane+pv, file+fv, rank+rv))
+                if not next_x:
+                    break
+                x = next_x
+                pv, fv, rv, next_x = move(x, colour)
+
+        # iterate over passive or capture moves
+        for move in figure.move_or_capture:
+            x = 1
+            pv, fv, rv, next_x = move(x, colour)
+            while self._in_bounds(plane+pv, file+fv, rank+rv):
+                if self[plane+pv, file+fv, rank+rv] == 0:
+                    moves.append((plane+pv, file+fv, rank+rv))
+                else:
+                    if self.figure_id_map[self[plane+pv, file+fv, rank+rv]][1] == -colour:
+                        captures.append((plane+pv, file+fv, rank+rv))
+                    break
+                x = next_x
+                pv, fv, rv, next_x = move(x, colour)
+        
+        return (moves, captures)
+
+    def _in_bounds(self, x, y, z):
+        return (0 <= x <= self.size+1) and (0 <= y <= self.size+1) and (0 <= z <= self.size+1)
 
     def __getitem__(self, key):
         # TODO implement rigurous input checking for key
@@ -66,3 +116,9 @@ class ChessBoard:
 
 
 board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
+render_board_ascii(board)
+
+board._add(Pawn, Colour.BLACK, ChessBoard.get_pos_coord("Bc3"))
+render_board_ascii(board)
+m = board.get_figure_moves(ChessBoard.get_pos_coord("Bb2"))
+print(m[0], m[1])
