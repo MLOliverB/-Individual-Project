@@ -50,15 +50,15 @@ class Pawn(Figure):
     can_jump = False
     move_or_capture = []
     moves = [
-        lambda x, y, z, c: (1*c, 0, 0),
-        lambda x, y, z, c: (0, 1*c, 0),
+        lambda x, c: (1*c, 0, 0),
+        lambda x, c: (0, 1*c, 0),
     ]
     captures = [
-        lambda x, y, z, c: (0, 1*c, 1*c),
-        lambda x, y, z, c: (0, 1*c, -1*c),
-        lambda x, y, z, c: (1*c, 0, 1*c),
-        lambda x, y, z, c: (1*c, 0, -1*c),
-        # lambda x, y, z, c: (1*c, 1*c, 0), # Variant that is debatable - Supported in A Guide to Fairy Chess by Anthony Dickens
+        lambda x, c: (0, 1*c, 1*c),
+        lambda x, c: (0, 1*c, -1*c),
+        lambda x, c: (1*c, 0, 1*c),
+        lambda x, c: (1*c, 0, -1*c),
+        # lambda x, c: (1*c, 1*c, 0), # Variant that is debatable - Supported in A Guide to Fairy Chess by Anthony Dickens
     ]
 
 class Unicorn(Figure):
@@ -67,10 +67,10 @@ class Unicorn(Figure):
     value = 3 # Subject to change
     can_jump = False
     move_or_capture = [
-        lambda x, y, z, c: (x, x, x),
-        lambda x, y, z, c: (x, -x, x),
-        lambda x, y, z, c: (-x, -x, x),
-        lambda x, y, z, c: (-x, x, x),
+        lambda x, c: (x, x, x),
+        lambda x, c: (x, -x, x),
+        lambda x, c: (-x, -x, x),
+        lambda x, c: (-x, x, x),
     ]
     moves = []
     captures = []
@@ -81,9 +81,9 @@ class Rook(Figure):
     value = 5 # Subject to change
     can_jump = False
     move_or_capture = [
-        lambda x, y, z, c: (x, 0, 0),
-        lambda x, y, z, c: (0, x, 0),
-        lambda x, y, z, c: (0, 0, x),
+        lambda x, c: (x, 0, 0),
+        lambda x, c: (0, x, 0),
+        lambda x, c: (0, 0, x),
     ]
     moves = []
     captures = []
@@ -94,10 +94,10 @@ class Bishop(Figure):
     value =  5 # Subject to change
     can_jump = False
     move_or_capture = [
-        lambda x, y, z, c: (x, x, 0),
-        lambda x, y, z, c: (0, x, -x),
-        lambda x, y, z, c: (-x, x, 0),
-        lambda x, y, z, c: (0, x, x),
+        lambda x, c: (x, x, 0),
+        lambda x, c: (0, x, -x),
+        lambda x, c: (-x, x, 0),
+        lambda x, c: (0, x, x),
     ]
     moves = []
     captures = []
@@ -108,32 +108,32 @@ class Knight(Figure):
     value = 9 # Subject to change
     can_jump = True
     move_or_capture = [
-        lambda x, y, z, c: (0, 1, 2),
-        lambda x, y, z, c: (0, 1, -2),
-        lambda x, y, z, c: (0, -1, 2),
-        lambda x, y, z, c: (0, -1, -2),
-        lambda x, y, z, c: (0, 2, 1),
-        lambda x, y, z, c: (0, 2, -1),
-        lambda x, y, z, c: (0, -2, 1),
-        lambda x, y, z, c: (0, -2, -1),
+        lambda x, c: (0, 1, 2),
+        lambda x, c: (0, 1, -2),
+        lambda x, c: (0, -1, 2),
+        lambda x, c: (0, -1, -2),
+        lambda x, c: (0, 2, 1),
+        lambda x, c: (0, 2, -1),
+        lambda x, c: (0, -2, 1),
+        lambda x, c: (0, -2, -1),
 
-        lambda x, y, z, c: (1, 0, 2),
-        lambda x, y, z, c: (1, 0, -2),
-        lambda x, y, z, c: (1, 2, 0),
-        lambda x, y, z, c: (1, -2, 0),
-        lambda x, y, z, c: (-1, 0, 2),
-        lambda x, y, z, c: (-1, 0, -2),
-        lambda x, y, z, c: (-1, 2, 0),
-        lambda x, y, z, c: (-1, -2, 0),
+        lambda x, c: (1, 0, 2),
+        lambda x, c: (1, 0, -2),
+        lambda x, c: (1, 2, 0),
+        lambda x, c: (1, -2, 0),
+        lambda x, c: (-1, 0, 2),
+        lambda x, c: (-1, 0, -2),
+        lambda x, c: (-1, 2, 0),
+        lambda x, c: (-1, -2, 0),
         
-        lambda x, y, z, c: (2, 0, 1),
-        lambda x, y, z, c: (2, 0, -1),
-        lambda x, y, z, c: (2, 1, 0),
-        lambda x, y, z, c: (2, -1, 0),
-        lambda x, y, z, c: (-2, 0, 1),
-        lambda x, y, z, c: (-2, 0, -1),
-        lambda x, y, z, c: (-2, 1, 0),
-        lambda x, y, z, c: (-2, -1, 0),
+        lambda x, c: (2, 0, 1),
+        lambda x, c: (2, 0, -1),
+        lambda x, c: (2, 1, 0),
+        lambda x, c: (2, -1, 0),
+        lambda x, c: (-2, 0, 1),
+        lambda x, c: (-2, 0, -1),
+        lambda x, c: (-2, 1, 0),
+        lambda x, c: (-2, -1, 0),
     ]
     moves = []
     captures = []
@@ -145,19 +145,19 @@ class Queen(Figure):
     can_jump = False
     move_or_capture = [
         # Unicorn Moves
-        lambda x, y, z, c: (x, x, x),
-        lambda x, y, z, c: (x, -x, x),
-        lambda x, y, z, c: (-x, -x, x),
-        lambda x, y, z, c: (-x, x, x),
+        lambda x, c: (x, x, x),
+        lambda x, c: (x, -x, x),
+        lambda x, c: (-x, -x, x),
+        lambda x, c: (-x, x, x),
         # Rook Moves
-        lambda x, y, z, c: (x, 0, 0),
-        lambda x, y, z, c: (0, x, 0),
-        lambda x, y, z, c: (0, 0, x),
+        lambda x, c: (x, 0, 0),
+        lambda x, c: (0, x, 0),
+        lambda x, c: (0, 0, x),
         # Bishop Moves
-        lambda x, y, z, c: (x, x, 0),
-        lambda x, y, z, c: (0, x, -x),
-        lambda x, y, z, c: (-x, x, 0),
-        lambda x, y, z, c: (0, x, x),
+        lambda x, c: (x, x, 0),
+        lambda x, c: (0, x, -x),
+        lambda x, c: (-x, x, 0),
+        lambda x, c: (0, x, x),
     ]
     moves = []
     captures = []
@@ -168,35 +168,35 @@ class King(Figure):
     value = sys.maxsize
     can_jump = False
     move_or_capture = [
-        lambda x, y, z, c: (-1, -1, -1),
-        lambda x, y, z, c: (-1, -1, 0),
-        lambda x, y, z, c: (-1, -1, 1),
-        lambda x, y, z, c: (-1, 0, -1),
-        lambda x, y, z, c: (-1, 0, 0),
-        lambda x, y, z, c: (-1, 0, 1),
-        lambda x, y, z, c: (-1, 1, -1),
-        lambda x, y, z, c: (-1, 1, 0),
-        lambda x, y, z, c: (-1, 1, 1),
+        lambda x, c: (-1, -1, -1),
+        lambda x, c: (-1, -1, 0),
+        lambda x, c: (-1, -1, 1),
+        lambda x, c: (-1, 0, -1),
+        lambda x, c: (-1, 0, 0),
+        lambda x, c: (-1, 0, 1),
+        lambda x, c: (-1, 1, -1),
+        lambda x, c: (-1, 1, 0),
+        lambda x, c: (-1, 1, 1),
 
-        lambda x, y, z, c: (0, -1, -1),
-        lambda x, y, z, c: (0, -1, 0),
-        lambda x, y, z, c: (0, -1, 1),
-        lambda x, y, z, c: (0, 0, -1),
-        # lambda x, y, z, c: (0, 0, 0), # This is just the current position
-        lambda x, y, z, c: (0, 0, 1),
-        lambda x, y, z, c: (0, 1, -1),
-        lambda x, y, z, c: (0, 1, 0),
-        lambda x, y, z, c: (0, 1, 1),
+        lambda x, c: (0, -1, -1),
+        lambda x, c: (0, -1, 0),
+        lambda x, c: (0, -1, 1),
+        lambda x, c: (0, 0, -1),
+        # lambda x, c: (0, 0, 0), # This is just the current position
+        lambda x, c: (0, 0, 1),
+        lambda x, c: (0, 1, -1),
+        lambda x, c: (0, 1, 0),
+        lambda x, c: (0, 1, 1),
 
-        lambda x, y, z, c: (1, -1, -1),
-        lambda x, y, z, c: (1, -1, 0),
-        lambda x, y, z, c: (1, -1, 1),
-        lambda x, y, z, c: (1, 0, -1),
-        lambda x, y, z, c: (1, 0, 0),
-        lambda x, y, z, c: (1, 0, 1),
-        lambda x, y, z, c: (1, 1, -1),
-        lambda x, y, z, c: (1, 1, 0),
-        lambda x, y, z, c: (1, 1, 1),
+        lambda x, c: (1, -1, -1),
+        lambda x, c: (1, -1, 0),
+        lambda x, c: (1, -1, 1),
+        lambda x, c: (1, 0, -1),
+        lambda x, c: (1, 0, 0),
+        lambda x, c: (1, 0, 1),
+        lambda x, c: (1, 1, -1),
+        lambda x, c: (1, 1, 0),
+        lambda x, c: (1, 1, 1),
     ]
     moves = []
     captures = []
