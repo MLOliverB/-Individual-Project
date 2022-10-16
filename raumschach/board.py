@@ -1,7 +1,5 @@
 import numpy as np
-
-from figures import build_figure_maps, Colour, Pawn
-from render import render_board_ascii
+from raumschach.figures import build_figure_maps
 
 INITIAL_5_5_BOARD_SETUP = [
     "r Ea5", "n Eb5", "k Ec5", "n Ed5", "r Ee5",
@@ -27,6 +25,19 @@ class ChessBoard:
             figure, colour = self.figure_name_map[fig_name]
             pos = ChessBoard.get_pos_coord(pos_code)
             self._add(figure, colour, pos)
+
+    def move(self, from_pos, to_pos):
+        if self[from_pos] == 0:
+            print(f"No piece on {self.get_pos_code(from_pos)}")
+            return
+        moves, captures = self.get_figure_moves(from_pos)
+        if to_pos not in moves and to_pos not in captures:
+            print(f"Position {self.get_pos_code(to_pos)} is not reachable by this piece")
+            return
+        fig = self[from_pos]
+        self[to_pos] = fig
+        self[from_pos] = 0
+        # TODO handle captures and pawn promotions in this function
 
     def get_figure_moves(self, figure_pos):
         if self[figure_pos] == 0:
@@ -75,7 +86,7 @@ class ChessBoard:
         return (moves, captures)
 
     def _in_bounds(self, x, y, z):
-        return (0 <= x <= self.size+1) and (0 <= y <= self.size+1) and (0 <= z <= self.size+1)
+        return (0 <= x <= self.size-1) and (0 <= y <= self.size-1) and (0 <= z <= self.size-1)
 
     def __getitem__(self, key):
         # TODO implement rigurous input checking for key
@@ -113,12 +124,3 @@ class ChessBoard:
         # Therefore, the array is indexed by [plane, file, rank]
         plane, rank, file = pos_code
         return (ord(plane) - ord('A'), int(file)-1, ord(rank) - ord('a'))
-
-
-board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
-render_board_ascii(board)
-
-board._add(Pawn, Colour.BLACK, ChessBoard.get_pos_coord("Bc3"))
-render_board_ascii(board)
-m = board.get_figure_moves(ChessBoard.get_pos_coord("Bb2"))
-print(m[0], m[1])
