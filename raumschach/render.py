@@ -47,7 +47,7 @@ def render_board_ascii(board_a):
         canvas[1+(i*v_dist): 1+mask.shape[0]+(i*v_dist), 0+(i*h_dist): mask.shape[1]+(i*h_dist)] = plane_mask
         canvas[i*v_dist, i*h_dist+3+math.floor((size+(size-1)*hgap)/2)] = ord('A')+(size-1-i)
 
-    print(np.array2string(canvas, max_line_width=math.ceil(1.5*canvas.shape[1]), separator='', formatter={'int':lambda x: "·" if x == 0 else chr(x)}, threshold=math.ceil(1.5*canvas.shape[0]*canvas.shape[1])).replace(" [", 5*' ').replace("[[", 5*' ').replace("]", ""))
+    print('\n' + np.array2string(canvas, max_line_width=math.ceil(1.5*canvas.shape[1]), separator='', formatter={'int':lambda x: "·" if x == 0 else chr(x)}, threshold=math.ceil(1.5*canvas.shape[0]*canvas.shape[1])).replace(" [", 5*' ').replace("[[", 5*' ').replace("]", "") + '\n')
 
 
 
@@ -125,4 +125,4 @@ def render_figure_moves_ascii(board_a, figure_pos):
                 canvas[row, col-1] = ord('├')
 
 
-    print(np.array2string(canvas, max_line_width=math.ceil(1.5*canvas.shape[1]), separator='', formatter={'int':lambda x: "·" if x == 0 else chr(x)}, threshold=math.ceil(1.5*canvas.shape[0]*canvas.shape[1])).replace(" [", 5*' ').replace("[[", 5*' ').replace("]", ""))
+    print('\n' + np.array2string(canvas, max_line_width=math.ceil(1.5*canvas.shape[1]), separator='', formatter={'int':lambda x: "·" if x == 0 else chr(x)}, threshold=math.ceil(1.5*canvas.shape[0]*canvas.shape[1])).replace(" [", 5*' ').replace("[[", 5*' ').replace("]", "") + '\n')
