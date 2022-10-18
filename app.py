@@ -11,6 +11,7 @@ from raumschach.render import render_board_ascii, render_figure_moves_ascii
 # print(m[0], m[1])
 
 board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
+render_board_ascii(board)
 render_figure_moves_ascii(board, ChessBoard.get_pos_coord("Bc1"))
 board.move(ChessBoard.get_pos_coord("Bc1"), ChessBoard.get_pos_coord("Ec4"))
 render_figure_moves_ascii(board, ChessBoard.get_pos_coord("Ec4"))
