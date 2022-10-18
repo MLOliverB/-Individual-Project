@@ -1,7 +1,7 @@
 from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
 from raumschach.figures import Colour, Pawn, Queen
 from raumschach.game import ChessGame
-from raumschach.player import ConsolePlayer
+from raumschach.player import ConsolePlayer, DummyPlayer, RandomPlayer
 from raumschach.render import render_board_ascii, render_figure_moves_ascii
 
 # board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
@@ -22,5 +22,12 @@ from raumschach.render import render_board_ascii, render_figure_moves_ascii
 # render_board_ascii(board)
 # print(board.cube.data.tobytes())
 
-game = ChessGame(ConsolePlayer("P1"), ConsolePlayer("P2"), 5)
+# game = ChessGame(ConsolePlayer("P1"), ConsolePlayer("P2"), 5)
+# game.play()
+
+game = ChessGame(RandomPlayer("P1"), RandomPlayer("P2"), 5)
 game.play()
+
+# threefold_repetition_script = ['N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3']
+# game = ChessGame(DummyPlayer("P1"), DummyPlayer("P2"), 5)
+# game.play_script(threefold_repetition_script)
