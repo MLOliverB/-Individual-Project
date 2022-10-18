@@ -1,6 +1,7 @@
 
 from raumschach.board import INITIAL_5_5_BOARD_SETUP, BoardState, ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, Colour, Pawn
+from raumschach.render import render_board_ascii
 
 class IllegalActionException(Exception):
     """ illegal action exception class """
@@ -23,21 +24,32 @@ class ChessGame():
         self.is_check = [False, False]
         self.is_checkmate = [False, False]
 
+    def play_script(self, script):
+        for i in range(len(self.players)):
+            self.players[i][0].script = script
+        self.play()
+
     def play(self):
         player_num = 0
+        message = "-/-"
         while not any(self.is_checkmate):
-            self.turn(player_num)
+            message = self.turn(player_num)
             player_num = (player_num + 1) % len(self.players)
+        render_board_ascii(self.chess_board.cube)
+        print('\n' + message)
         if all(self.is_checkmate):
             print("Draw!")
         else:
             for i in range(len(self.is_checkmate)):
-                if self.players[i][1] == Colour.WHITE:
-                    print("White wins!")
-                    break
-                else:
-                    print("Black wins!")
-                    break
+                if self.is_checkmate[i]:
+                    if self.players[i][1] == Colour.WHITE:
+                        print("White wins!")
+                        break
+                    elif self.players[i][1] == Colour.BLACK:
+                        print("Black wins!")
+                        break
+        print("\nMove history: ")
+        print(self.move_history)
 
     def turn(self, player_num):
         player, colour = self.players[player_num]
@@ -51,6 +63,8 @@ class ChessGame():
         hash_val = self.chess_board.cube.data.tobytes()
         state_repetition = self.state_repetition_map[hash_val] if hash_val in self.state_repetition_map else 0
         action = player.send_action(player.receive_observation(BoardState(self.chess_board.cube, colour, moves, captures, self.no_progress, state_repetition)))
+        if (type(action) == str):
+            action = self._read_recorded_move(action)
         from_pos, to_pos = action
 
         # check if the action is legal
@@ -59,12 +73,25 @@ class ChessGame():
         elif (from_pos in moves and to_pos not in moves[from_pos]) and (from_pos in captures and to_pos not in captures[from_pos]):
             raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
 
+        
+
+        # Implement the action on the chess board
+        from_figure_colour = FIGURE_ID_MAP[self.chess_board[from_pos]] # Get the figure standing at the from position
+        to_figure_colour = FIGURE_ID_MAP[self.chess_board[to_pos]] if self.chess_board[to_pos] != 0 else None # Get the figure standing at the to position
+        self.chess_board.move(from_pos, to_pos)
+
+
+        # Record the move in the move history
+        self._record_move(action, from_figure_colour, to_figure_colour)
+        print(f"Total Moves: ({len(self.move_history)}) | Most recent moves: ", " <-- ".join(self.move_history[-1: -6: -1]))
+
+
         # Update the no progress rule
         self.no_progress += 1
-        if FIGURE_ID_MAP[self.chess_board[from_pos]][0] == Pawn:
-            self.no_progress == 0
+        if from_figure_colour[0] == Pawn:
+            self.no_progress = 0
         elif from_pos in captures and to_pos in captures[from_pos]:
-            self.no_progress == 0
+            self.no_progress = 0
         elif self.no_progress > 50:
             self.is_checkmate[player_num] = True
             self.is_checkmate[(player_num + 1) % len(self.players)] = True
@@ -72,10 +99,6 @@ class ChessGame():
             self.players[(player_num + 1) % len(self.players)][0].receive_reward(0, self.move_history[-1])
             return "No progress has been achieved the last 50 turns (No pawn moved & no piece captured)." # Draw
 
-        # Implement the action on the chess board
-        from_figure_id = FIGURE_ID_MAP[self.chess_board[from_pos]] # Get the figure standing at the from position
-        to_figure_id = FIGURE_ID_MAP[self.chess_board[to_pos]] if self.chess_board[to_pos] != 0 else None # Get the figure standing at the to position
-        self.chess_board.move(from_pos, to_pos)
 
         # Update the board state repetition map
         hash_val = self.chess_board.cube.data.tobytes()
@@ -96,10 +119,6 @@ class ChessGame():
         # Determine whether the game is over (either checkmate or stalemate)
 
         # Determine whether we have a check situation
-
-        # Record the move in the move history
-        self._record_move(action, from_figure_id, to_figure_id)
-        print(self.move_history)
 
         # Reward of moves generally is 0 - Reward of win is +1 - Reward of loss is -1 - Reward of draw is 0
         reward = 0
@@ -122,3 +141,9 @@ class ChessGame():
             else:
                 s += " 0-1"
         self.move_history.append(s)
+
+    def _read_recorded_move(self, record):
+        figure_name, action = record.split(':')
+        from_pos = action[:3]
+        to_pos = action[4:7]
+        return (ChessBoard.get_pos_coord(from_pos), ChessBoard.get_pos_coord(to_pos))
