@@ -71,6 +71,8 @@ class ChessBoard:
         if ally_king_position in ally_moves:
             for enemy in enemy_moves:
                 ally_moves[ally_king_position] = [ k_move for k_move in ally_moves[ally_king_position] if k_move not in enemy_moves[enemy] ]
+            if not ally_moves[ally_king_position]:
+                ally_moves.pop(ally_king_position)
         
         return (ally_moves, ally_captures)
 
