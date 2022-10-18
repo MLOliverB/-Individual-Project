@@ -26,20 +26,14 @@ class ConsolePlayer(Player):
         super().__init__(name)
 
     def receive_observation(self, board_state):
-        print("moves")
-        for pos in board_state.moves:
-            print(ChessBoard.get_pos_code(pos), pos, [ f"{ChessBoard.get_pos_code(m)} ({m})" for m in board_state.moves[pos] ])
-        print("captures")
-        for pos in board_state.captures:
-            print(ChessBoard.get_pos_code(pos), [ ChessBoard.get_pos_code(m) for m in board_state.captures[pos] ])
         return board_state
 
     def send_action(self, observation):
         colour = "White" if observation.colour == Colour.WHITE else "Black"
         action_input = ""
         action = None
+        render_board_ascii(observation.cb)
         while True:
-            render_board_ascii(observation.cb)
             action_input = input(f"(Move {colour}) >> ")
             if len(action_input.split(' ')) == 1:
                 try:
@@ -50,11 +44,12 @@ class ConsolePlayer(Player):
                 except:
                     print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece")
                     print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+                    render_board_ascii(observation.cb)
             elif len(action_input.split(' ')) == 2:
                 pos1, pos2 = action_input.split(' ')
-                coord1 = ChessBoard.get_pos_coord(pos1)
-                coord2 = ChessBoard.get_pos_coord(pos2)
                 try:
+                    coord1 = ChessBoard.get_pos_coord(pos1)
+                    coord2 = ChessBoard.get_pos_coord(pos2)
                     if observation.cb[coord1] == 0:
                         print("Invalid input - You can only move your own chess pieces")
                     elif coord2 not in observation.moves[coord1] and coord2 not in observation.captures[coord1]:
@@ -66,9 +61,11 @@ class ConsolePlayer(Player):
                 except:
                     print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece")
                     print("              - Or input two board positions (e.g. Aa1 Ab1) to move one of your pieces from the first position to the second")
+                render_board_ascii(observation.cb)
             else:
                 print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece")
                 print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+                render_board_ascii(observation.cb)
         return action
 
     def receive_reward(self, action, reward_value):
