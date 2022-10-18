@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import random
 from raumschach.board import ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, Colour
 
@@ -19,6 +20,41 @@ class Player(object, metaclass=ABCMeta):
     @abstractmethod
     def receive_reward(self, action, reward_value):
         pass
+
+
+class DummyPlayer(Player):
+    script = None
+    def __init__(self, name):
+        super().__init__(name)
+
+    def receive_observation(self, board_state):
+        return board_state
+
+    def send_action(self, observation):
+        render_board_ascii(observation.cb)
+        return self.script.pop(0)
+
+    def receive_reward(self, action, reward_value):
+        return super().receive_reward(action, reward_value)
+
+
+class RandomPlayer(Player):
+    def __init__(self, name):
+        super().__init__(name)
+
+    def receive_observation(self, board_state):
+        return board_state
+
+    def send_action(self, observation):
+        from_pos = random.choice([*set([*observation.moves] + [*observation.captures])])
+        moves = observation.moves[from_pos] if from_pos in observation.moves else []
+        captures = observation.captures[from_pos] if from_pos in observation.captures else []
+        to_pos = random.choice([*set(moves + captures)])
+        render_board_ascii(observation.cb)
+        return (from_pos, to_pos)
+
+    def receive_reward(self, action, reward_value):
+        return super().receive_reward(action, reward_value)
 
 
 class ConsolePlayer(Player):
