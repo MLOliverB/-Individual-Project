@@ -1,5 +1,5 @@
 import numpy as np
-from raumschach.figures import build_figure_maps
+from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, Colour, King
 
 INITIAL_5_5_BOARD_SETUP = [
     "r Ea5", "n Eb5", "k Ec5", "n Ed5", "r Ee5",
@@ -19,10 +19,9 @@ class ChessBoard:
     def __init__(self, board_size, setup):
         self.size = board_size
         self.cube = np.zeros((self.size, self.size, self.size), dtype=np.byte, order='C')
-        self.figure_id_map, self.figure_name_map = build_figure_maps()
         for str in setup:
             fig_name, pos_code = str.split(" ")
-            figure, colour = self.figure_name_map[fig_name]
+            figure, colour = FIGURE_NAME_MAP[fig_name]
             pos = ChessBoard.get_pos_coord(pos_code)
             self._add(figure, colour, pos)
 
@@ -30,7 +29,7 @@ class ChessBoard:
         if self[from_pos] == 0:
             print(f"No piece on {self.get_pos_code(from_pos)}")
             return
-        moves, captures = self.get_figure_moves(from_pos)
+        moves, captures = ChessBoard.generate_figure_moves_captures(self.cube, from_pos)
         if to_pos not in moves and to_pos not in captures:
             print(f"Position {self.get_pos_code(to_pos)} is not reachable by this piece")
             return
@@ -38,55 +37,42 @@ class ChessBoard:
         self[to_pos] = fig
         self[from_pos] = 0
         # TODO handle captures and pawn promotions in this function
-
-    def get_figure_moves(self, figure_pos):
-        if self[figure_pos] == 0:
-            return ([], [])
-        figure, colour = self.figure_id_map[self[figure_pos]]
-        plane, file, rank = figure_pos
-        moves = []
-        captures = []
-
-        # iterate over passive moves
-        for move in figure.moves:
-            x = 1
-            pv, fv, rv, next_x = move(x, colour)
-            while self._in_bounds(plane+pv, file+fv, rank+rv) and self[plane+pv, file+fv, rank+rv] == 0:
-                moves.append((plane+pv, file+fv, rank+rv))
-                if not next_x:
-                    break
-                x = next_x
-                pv, fv, rv, next_x = move(x, colour)
-
-        # iterate over capture moves
-        for move in figure.captures:
-            x = 1
-            pv, fv, rv, next_x = move(x, colour)
-            while self._in_bounds(plane+pv, file+fv, rank+rv) and self[plane+pv, file+fv, rank+rv] != 0 and self.figure_id_map[self[plane+pv, file+fv, rank+rv]][1] == -colour:
-                captures.append((plane+pv, file+fv, rank+rv))
-                if not next_x:
-                    break
-                x = next_x
-                pv, fv, rv, next_x = move(x, colour)
-
-        # iterate over passive or capture moves
-        for move in figure.move_or_capture:
-            x = 1
-            pv, fv, rv, next_x = move(x, colour)
-            while self._in_bounds(plane+pv, file+fv, rank+rv):
-                if self[plane+pv, file+fv, rank+rv] == 0:
-                    moves.append((plane+pv, file+fv, rank+rv))
-                else:
-                    if self.figure_id_map[self[plane+pv, file+fv, rank+rv]][1] == -colour:
-                        captures.append((plane+pv, file+fv, rank+rv))
-                    break
-                x = next_x
-                pv, fv, rv, next_x = move(x, colour)
         
-        return (moves, captures)
+    @staticmethod
+    def get_moves_captures(board_a, colour):
+        ally_positions = np.asarray((board_a > 0).nonzero()).T if colour == Colour.WHITE else np.asarray((board_a < 0).nonzero()).T
+        enemy_positions = np.asarray((board_a > 0).nonzero()).T if colour == Colour.WHITE else np.asarray((board_a < 0).nonzero()).T
 
-    def _in_bounds(self, x, y, z):
-        return (0 <= x <= self.size-1) and (0 <= y <= self.size-1) and (0 <= z <= self.size-1)
+        # Generate moves for figures of the same colour
+        ally_king_position = None
+        ally_moves = {}
+        ally_captures = {}
+        for figure_pos in [ (p[0], p[1], p[2]) for p in ally_positions ]:
+            if not ally_king_position and King == FIGURE_ID_MAP[board_a[figure_pos]][0]:
+                ally_king_position = figure_pos
+            moves, captures = ChessBoard.generate_figure_moves_captures(board_a, figure_pos)
+            if moves:
+                ally_moves[figure_pos] = moves
+            if captures:
+                ally_captures[figure_pos] = captures
+
+        # Generate moves for figures of the opposite colour
+        enemy_moves = {}
+        enemy_captures = {}
+        for figure_pos in [ (p[0], p[1], p[2]) for p in enemy_positions ]:
+            moves, captures = ChessBoard.generate_figure_moves_captures(board_a, figure_pos)
+            if moves:
+                enemy_moves[figure_pos] = moves
+            if captures:
+                enemy_captures[figure_pos] = captures
+
+        # Delete moves from the King's move set that would make the King check himself
+        # We only need to check enemy moves since enemy captures capture on of our ally piece and the King can't move there anyways
+        if ally_king_position in ally_moves:
+            for enemy in enemy_moves:
+                ally_moves[ally_king_position] = [ k_move for k_move in ally_moves[ally_king_position] if k_move not in enemy_moves[enemy] ]
+        
+        return (ally_moves, ally_captures)
 
     def __getitem__(self, key):
         # TODO implement rigurous input checking for key
@@ -114,9 +100,61 @@ class ChessBoard:
         self[pos] = figure.id * colour
 
     @staticmethod
+    def generate_figure_moves_captures(board_a, figure_pos):
+        figure, colour = FIGURE_ID_MAP[board_a[figure_pos]]
+        plane, file, rank = figure_pos
+
+        moves = []
+        captures = []
+
+        #iterate over passive moves
+        for move in figure.moves:
+            x = 1
+            pv, fv, rv, next_x = move(x, colour)
+            while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv) and board_a[plane+pv, file+fv, rank+rv] == 0:
+                moves.append((plane+pv, file+fv, rank+rv))
+                if not next_x:
+                    break
+                x = next_x
+                pv, fv, rv, next_x = move(x, colour)
+
+        # iterate over capture moves
+        for move in figure.captures:
+            x = 1
+            pv, fv, rv, next_x = move(x, colour)
+            while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv) and board_a[plane+pv, file+fv, rank+rv] != 0 and FIGURE_ID_MAP[board_a[plane+pv, file+fv, rank+rv]][1] == -colour:
+                captures.append((plane+pv, file+fv, rank+rv))
+                if not next_x:
+                    break
+                x = next_x
+                pv, fv, rv, next_x = move(x, colour)
+
+        # iterate over passive or capture moves
+        for move in figure.move_or_capture:
+            x = 1
+            pv, fv, rv, next_x = move(x, colour)
+            while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv):
+                if board_a[plane+pv, file+fv, rank+rv] == 0:
+                    moves.append((plane+pv, file+fv, rank+rv))
+                else:
+                    if FIGURE_ID_MAP[board_a[plane+pv, file+fv, rank+rv]][1] == -colour:
+                        captures.append((plane+pv, file+fv, rank+rv))
+                    break
+                if not next_x:
+                    break
+                x = next_x
+                pv, fv, rv, next_x = move(x, colour)
+
+        return (moves, captures)
+
+    @staticmethod
+    def in_bounds(bound_size, x, y, z):
+        return (0 <= x <= bound_size-1) and (0 <= y <= bound_size-1) and (0 <= z <= bound_size-1)
+
+    @staticmethod
     def get_pos_code(pos_coord):
         plane, file, rank = pos_coord
-        return f"{ord('A') + plane}{ord('a') + rank}{file+1}"
+        return f"{chr(ord('A') + plane)}{chr(ord('a') + rank)}{chr(ord('1') + file)}"
 
     @staticmethod
     def get_pos_coord(pos_code):
@@ -124,3 +162,13 @@ class ChessBoard:
         # Therefore, the array is indexed by [plane, file, rank]
         plane, rank, file = pos_code
         return (ord(plane) - ord('A'), int(file)-1, ord(rank) - ord('a'))
+
+
+class BoardState():
+    def __init__(self, cube, colour, moves, captures, no_progress_count, state_repetition):
+        self.cb = cube
+        self.colour = colour
+        self.moves = moves
+        self.captures = captures
+        self.no_progress_count = no_progress_count
+        self.state_repetition = state_repetition
