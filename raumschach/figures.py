@@ -14,7 +14,7 @@ class Figure(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def name(self):
+    def id(self):
         pass
 
     @property
@@ -30,6 +30,11 @@ class Figure(metaclass=ABCMeta):
     @property
     @abstractmethod
     def can_jump(self):
+        pass
+
+    @property
+    @abstractmethod
+    def move_or_capture(self):
         pass
 
     @property
