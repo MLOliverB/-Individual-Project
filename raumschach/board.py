@@ -149,7 +149,7 @@ class ChessBoard:
 
     @staticmethod
     def in_bounds(bound_size, x, y, z):
-        return (0 <= x <= bound_size-1) and (0 <= y <= bound_size-1) and (0 <= z <= bound_size-1)
+        return (0 <= x <= bound_size) and (0 <= y <= bound_size) and (0 <= z <= bound_size)
 
     @staticmethod
     def get_pos_code(pos_coord):
