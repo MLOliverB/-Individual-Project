@@ -24,6 +24,7 @@ class ChessGame():
         self.state_repetition_map = {} # Threefold-repetition rule (if the same board state with the same moves occurs for the third time, the game ends in a draw)
         self.is_checked = [False, False]
         self.is_checkmate = [False, False]
+        self.next_player_moves_captures = None
 
     def play_script(self, script):
         for i in range(len(self.players)):
@@ -64,18 +65,8 @@ class ChessGame():
 
         # Generate all possible moves for the pieces of this player
         # We need to generate the moves of all colours however since the King cannot put himself into check
-        moves, captures = ChessBoard.get_moves_captures(self.chess_board.cube, colour)
 
-        # If this player is under check, they can only do moves that get them out of the check situation
-        if self.is_checked[player_num]:
-            pass
-
-
-        # for move in moves:
-        #     print(f"{ChessBoard.get_pos_code(move)} -> {[ChessBoard.get_pos_code(m) for m in moves[move]]}")
-        # for capture in captures:
-        #     print(f"{ChessBoard.get_pos_code(capture)} -> {[ChessBoard.get_pos_code(c) for c in captures[capture]]}")
-
+        moves, captures = self.next_player_moves_captures if self.next_player_moves_captures != None else ChessBoard.get_moves_captures(self.chess_board.cube, colour)
 
         # send the observation to the player and receive the corresponding action
         # The action is only allowed to be a move
@@ -100,7 +91,7 @@ class ChessGame():
         ChessBoard.move(self.chess_board.cube, from_pos, to_pos)
 
 
-        # render_board_ascii(self.chess_board.cube)
+        render_board_ascii(self.chess_board.cube)
 
 
         # Update the no progress rule
@@ -137,8 +128,9 @@ class ChessGame():
 
         # Generate next moves of white and black pieces and assign them to either this player or the enemy player based on colour
         white_next_moves_captures, black_next_moves_captures = ChessBoard.get_moves_captures(self.chess_board.cube)
-        this_player_next_moves_captures = [black_next_moves_captures, None, white_next_moves_captures][1+colour]
-        enemy_player_next_moves_captures = [black_next_moves_captures, None, white_next_moves_captures][1+enemy_colour]
+        current_player_moves_captures = [black_next_moves_captures, None, white_next_moves_captures][1+colour]
+        next_player_moves_captures = [black_next_moves_captures, None, white_next_moves_captures][1+enemy_colour]
+        self.next_player_moves_captures = next_player_moves_captures
 
         if not message: # The game has not yet ended
             # Determine whether we have a checkmate
@@ -155,24 +147,30 @@ class ChessGame():
 
         # Determine whether we (still) have a check situation
         if not message: # The game has not yet ended
-            this_player_next_moves, this_player_next_captures = this_player_next_moves_captures
-            enemy_king_position = np.where(self.chess_board.cube==(King.id * enemy_colour))
-            try:
-                enemy_king_position = (enemy_king_position[0][0], enemy_king_position[1][0], enemy_king_position[2][0])
-                is_enemy_under_check = False
-                for ally_piece in this_player_next_captures:
-                    if enemy_king_position in this_player_next_captures[ally_piece]:
-                        is_enemy_under_check = True
-                        break
-                self.is_checked[enemy_player_num] = is_enemy_under_check
-            except:
-                print("FUUUUUUUUCK")
-                render_board_ascii(self.chess_board.cube)
+            current_player_captures = current_player_moves_captures[1]
+            next_player_king_position = np.where(self.chess_board.cube==(King.id * enemy_colour))
+            next_player_king_position = (next_player_king_position[0][0], next_player_king_position[1][0], next_player_king_position[2][0])
+            next_player_under_check = False
+            for ally_piece in current_player_captures:
+                if next_player_king_position in current_player_captures[ally_piece]:
+                    next_player_under_check = True
+                    break
+            self.is_checked[enemy_player_num] = next_player_under_check
+
+            next_player_captures = next_player_moves_captures[1]
+            current_player_king_position = np.where(self.chess_board.cube==(King.id * colour))
+            current_player_king_position = (current_player_king_position[0][0], current_player_king_position[1][0], current_player_king_position[2][0])
+            current_player_under_check = False
+            for enemy_piece in next_player_captures:
+                if current_player_king_position in next_player_captures[enemy_piece]:
+                    current_player_under_check = True
+                    break
+            self.is_checked[player_num] = current_player_under_check
             
 
         # Check if the enemy player is able to do any moves on their next turn
         if not message: # The game has not yet ended
-            if not enemy_player_next_moves_captures[0] and not enemy_player_next_moves_captures[1]:
+            if not next_player_moves_captures[0] and not next_player_moves_captures[1]:
                 if self.is_checked[enemy_player_num]:
                     self.is_checked[enemy_player_num] = False
                     self.is_checkmate[enemy_player_num] = True
@@ -205,8 +203,10 @@ class ChessGame():
         s = f"{(from_figure.name[1+from_colour])}:{ChessBoard.get_pos_code(action[0])}{move_capture_sign}{ChessBoard.get_pos_code(action[1])}"
         if all(self.is_checked):
             s += "++"
-        elif any(self.is_checked):
-            s += "+"
+        elif self.is_checked[0]:
+            s += "+w"
+        elif self.is_checked[1]:
+            s += "+b"
         elif all(self.is_checkmate):
             s += "= ½-½"
         elif any(self.is_checkmate):
