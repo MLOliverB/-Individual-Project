@@ -6,6 +6,10 @@ class Colour(object):
     WHITE = 1
     BLACK = -1
 
+    @staticmethod
+    def string(colour):
+        return "White" if colour == Colour.WHITE else "Black"
+
 
 class Figure(object, metaclass=ABCMeta):
     def __init__(self):

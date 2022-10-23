@@ -18,7 +18,7 @@ class Player(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def receive_reward(self, action, reward_value):
+    def receive_reward(self, reward_value, move_history):
         pass
 
 
@@ -34,8 +34,8 @@ class DummyPlayer(Player):
         render_board_ascii(observation.cb)
         return self.script.pop(0)
 
-    def receive_reward(self, action, reward_value):
-        return super().receive_reward(action, reward_value)
+    def receive_reward(self, reward_value, move_history):
+        return super().receive_reward(reward_value, move_history)
 
 
 class RandomPlayer(Player):
@@ -46,15 +46,23 @@ class RandomPlayer(Player):
         return board_state
 
     def send_action(self, observation):
-        from_pos = random.choice([*set([*observation.moves] + [*observation.captures])])
+        pieces = [*set([*observation.moves] + [*observation.captures])]
+        if not pieces:
+            raise Exception("FUCK!")
+        from_pos = pieces[random.randint(0, len(pieces)-1)] # random.choice([*set([*observation.moves] + [*observation.captures])])
         moves = observation.moves[from_pos] if from_pos in observation.moves else []
         captures = observation.captures[from_pos] if from_pos in observation.captures else []
-        to_pos = random.choice([*set(moves + captures)])
-        render_board_ascii(observation.cb)
+        while not [*set(moves + captures)]:
+            from_pos = random.choice([*set([*observation.moves] + [*observation.captures])])
+            moves = observation.moves[from_pos] if from_pos in observation.moves else []
+            captures = observation.captures[from_pos] if from_pos in observation.captures else []
+        moves_captures = [*set(moves + captures)]
+        to_pos = moves_captures[random.randint(0, len(moves_captures)-1)] # random.choice([*set(moves + captures)]) - but choice somehow breaks after some time
+        # render_board_ascii(observation.cb)
         return (from_pos, to_pos)
 
-    def receive_reward(self, action, reward_value):
-        return super().receive_reward(action, reward_value)
+    def receive_reward(self, reward_value, move_history):
+        return super().receive_reward(reward_value, move_history)
 
 
 class ConsolePlayer(Player):
@@ -104,5 +112,5 @@ class ConsolePlayer(Player):
                 render_board_ascii(observation.cb)
         return action
 
-    def receive_reward(self, action, reward_value):
-        return super().receive_reward(action, reward_value)
+    def receive_reward(self, reward_value, move_history):
+        return super().receive_reward(reward_value, move_history)
