@@ -47,8 +47,6 @@ class RandomPlayer(Player):
 
     def send_action(self, observation):
         pieces = [*set([*observation.moves] + [*observation.captures])]
-        if not pieces:
-            raise Exception("FUCK!")
         from_pos = pieces[random.randint(0, len(pieces)-1)] # random.choice([*set([*observation.moves] + [*observation.captures])])
         moves = observation.moves[from_pos] if from_pos in observation.moves else []
         captures = observation.captures[from_pos] if from_pos in observation.captures else []
@@ -91,23 +89,22 @@ class ConsolePlayer(Player):
                     render_board_ascii(observation.cb)
             elif len(action_input.split(' ')) == 2:
                 pos1, pos2 = action_input.split(' ')
-                try:
-                    coord1 = ChessBoard.get_pos_coord(pos1)
-                    coord2 = ChessBoard.get_pos_coord(pos2)
-                    if observation.cb[coord1] == 0:
-                        print("Invalid input - You can only move your own chess pieces")
-                    elif coord2 not in observation.moves[coord1] and coord2 not in observation.captures[coord1]:
-                        print("Invalid input - You tried to move to an illegal position")
-                        print("input a single board position (e.g. Aa1) to display the moves of that chess piece")
-                    else:
-                        action = (coord1, coord2)
-                        break
-                except:
-                    print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece")
-                    print("              - Or input two board positions (e.g. Aa1 Ab1) to move one of your pieces from the first position to the second")
+                coord1 = ChessBoard.get_pos_coord(pos1)
+                coord2 = ChessBoard.get_pos_coord(pos2)
+                if observation.cb[coord1] == 0:
+                    print("Invalid input - You can only move your own chess pieces")
+                elif (coord1 not in observation.moves) and (coord1 not in observation.captures):
+                    print("Invalid input - You cannot move the piece at the specified position")
+                    print("input a single board position (e.g. Aa1) to display the moves of that chess piece")
+                elif (coord2 not in observation.moves.get(coord1, [])) and (coord2 not in observation.captures.get(coord1, [])):
+                    print("Invalid input - You cannot move/capture to the specified location")
+                    print("input a single board position (e.g. Aa1) to display the moves of that chess piece")
+                else:
+                    action = (coord1, coord2)
+                    break
                 render_board_ascii(observation.cb)
             else:
-                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece")
+                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece (Too many arguments)")
                 print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
                 render_board_ascii(observation.cb)
         return action
