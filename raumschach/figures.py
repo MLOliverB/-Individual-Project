@@ -6,15 +6,19 @@ class Colour(object):
     WHITE = 1
     BLACK = -1
 
+    @staticmethod
+    def string(colour):
+        return "White" if colour == Colour.WHITE else "Black"
 
-class Figure(metaclass=ABCMeta):
+
+class Figure(object, metaclass=ABCMeta):
     def __init__(self):
         # ...
         pass
 
     @property
     @abstractmethod
-    def name(self):
+    def id(self):
         pass
 
     @property
@@ -34,6 +38,11 @@ class Figure(metaclass=ABCMeta):
 
     @property
     @abstractmethod
+    def move_or_capture(self):
+        pass
+
+    @property
+    @abstractmethod
     def moves(self):
         pass
 
@@ -45,7 +54,7 @@ class Figure(metaclass=ABCMeta):
 
 class Pawn(Figure):
     id = 1
-    name = ("Pawn", 'P', 'p')
+    name = ('p', "Pawn", 'P')
     value = 1 # Set as the unit value
     can_jump = False
     move_or_capture = []
@@ -63,7 +72,7 @@ class Pawn(Figure):
 
 class Unicorn(Figure):
     id = 2
-    name = ("Unicorn", 'U', 'u')
+    name = ('u', "Unicorn", 'U')
     value = 3 # Subject to change
     can_jump = False
     move_or_capture = [
@@ -81,7 +90,7 @@ class Unicorn(Figure):
 
 class Rook(Figure):
     id = 3
-    name = ("Rook", 'R', 'r')
+    name = ('r', "Rook", 'R')
     value = 5 # Subject to change
     can_jump = False
     move_or_capture = [
@@ -97,7 +106,7 @@ class Rook(Figure):
 
 class Bishop(Figure):
     id = 4
-    name = ("Bishop", 'B', 'b')
+    name = ('b', "Bishop", 'B')
     value =  5 # Subject to change
     can_jump = False
     move_or_capture = [
@@ -115,7 +124,7 @@ class Bishop(Figure):
 
 class Knight(Figure):
     id = 5
-    name = ("Knight", 'N', 'n')
+    name = ('n', "Knight", 'N')
     value = 9 # Subject to change
     can_jump = True
     move_or_capture = [
@@ -151,7 +160,7 @@ class Knight(Figure):
 
 class Queen(Figure):
     id = 6
-    name = ("Queen", 'Q', 'q')
+    name = ('q', "Queen", 'Q')
     value = 15 # Subject to change
     can_jump = False
     move_or_capture = [
@@ -186,7 +195,7 @@ class Queen(Figure):
 
 class King(Figure):
     id = 7
-    name = ("King", 'K', 'k')
+    name = ('k', "King", 'K')
     value = sys.maxsize
     can_jump = False
     move_or_capture = [
@@ -224,15 +233,49 @@ class King(Figure):
     captures = []
 
 
-FIGURES = [Pawn, Unicorn, Rook, Bishop, Knight, Queen, King]
 
+FIGURE_ID_MAP = {
+    Colour.WHITE * Pawn.id    : (Pawn, Colour.WHITE),
+    Colour.BLACK * Pawn.id    : (Pawn, Colour.BLACK),
 
-def build_figure_maps():
-    figure_id_map = {}
-    figure_name_map = {}
-    for figure in FIGURES:
-        figure_id_map[figure.id * Colour.WHITE] = (figure, Colour.WHITE)
-        figure_id_map[figure.id * Colour.BLACK] = (figure, Colour.BLACK)
-        figure_name_map[figure.name[1]] = (figure, Colour.WHITE)
-        figure_name_map[figure.name[2]] = (figure, Colour.BLACK)
-    return (figure_id_map, figure_name_map)
+    Colour.WHITE * Unicorn.id : (Unicorn, Colour.WHITE),
+    Colour.BLACK * Unicorn.id : (Unicorn, Colour.BLACK),
+
+    Colour.WHITE * Rook.id    : (Rook, Colour.WHITE),
+    Colour.BLACK * Rook.id    : (Rook, Colour.BLACK),
+
+    Colour.WHITE * Bishop.id  : (Bishop, Colour.WHITE),
+    Colour.BLACK * Bishop.id  : (Bishop, Colour.BLACK),
+
+    Colour.WHITE * Knight.id  : (Knight, Colour.WHITE),
+    Colour.BLACK * Knight.id  : (Knight, Colour.BLACK),
+
+    Colour.WHITE * Queen.id   : (Queen, Colour.WHITE),
+    Colour.BLACK * Queen.id   : (Queen, Colour.BLACK),
+
+    Colour.WHITE * King.id    : (King, Colour.WHITE),
+    Colour.BLACK * King.id    : (King, Colour.BLACK),
+}
+
+FIGURE_NAME_MAP = {
+    Pawn.name[1+(1*Colour.WHITE)] : (Pawn, Colour.WHITE),
+    Pawn.name[1+(1*Colour.BLACK)] : (Pawn, Colour.BLACK),
+
+    Unicorn.name[1+(1*Colour.WHITE)] : (Unicorn, Colour.WHITE),
+    Unicorn.name[1+(1*Colour.BLACK)] : (Unicorn, Colour.BLACK),
+
+    Rook.name[1+(1*Colour.WHITE)] : (Rook, Colour.WHITE),
+    Rook.name[1+(1*Colour.BLACK)] : (Rook, Colour.BLACK),
+
+    Bishop.name[1+(1*Colour.WHITE)] : (Bishop, Colour.WHITE),
+    Bishop.name[1+(1*Colour.BLACK)] : (Bishop, Colour.BLACK),
+
+    Knight.name[1+(1*Colour.WHITE)] : (Knight, Colour.WHITE),
+    Knight.name[1+(1*Colour.BLACK)] : (Knight, Colour.BLACK),
+
+    Queen.name[1+(1*Colour.WHITE)] : (Queen, Colour.WHITE),
+    Queen.name[1+(1*Colour.BLACK)] : (Queen, Colour.BLACK),
+
+    King.name[1+(1*Colour.WHITE)] : (King, Colour.WHITE),
+    King.name[1+(1*Colour.BLACK)] : (King, Colour.BLACK),
+}
