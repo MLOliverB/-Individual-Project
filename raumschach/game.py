@@ -39,23 +39,19 @@ class ChessGame():
             player_num = (player_num + 1) % len(self.players)
         render_board_ascii(self.chess_board.cube)
         print('\n' + message)
+        winner = 0
         if all(self.is_checkmate):
             print("Draw!")
+            winner = 0
         elif self.is_checkmate[0]:
             print("Black wins!")
+            winner = -1
         elif self.is_checkmate[1]:
             print("White wins!")
-        # else:
-        #     for i in range(len(self.is_checkmate)):
-        #         if self.is_checkmate[i]:
-        #             if self.players[i][1] == Colour.WHITE:
-        #                 print("White wins!")
-        #                 break
-        #             elif self.players[i][1] == Colour.BLACK:
-        #                 print("Black wins!")
-        #                 break
+            winner = 1
         print("\nMove history: ")
         print(self.move_history)
+        return winner
 
     def turn(self, player_num):
         player, colour = self.players[player_num]
@@ -89,10 +85,6 @@ class ChessGame():
         from_figure_colour = FIGURE_ID_MAP[self.chess_board[from_pos]] # Get the figure standing at the from position
         to_figure_colour = FIGURE_ID_MAP[self.chess_board[to_pos]] if self.chess_board[to_pos] != 0 else None # Get the figure standing at the to position
         ChessBoard.move(self.chess_board.cube, from_pos, to_pos)
-
-
-        render_board_ascii(self.chess_board.cube)
-
 
         # Update the no progress rule
         if not message: # The game has not yet ended
@@ -184,10 +176,11 @@ class ChessGame():
                     enemy_player.receive_reward(0, self.move_history)
                     message = f"'{enemy_player.name}' ({Colour.string(enemy_colour)}) is not checked and does not have any available moves - automatic stalemate"
 
+        # render_board_ascii(self.chess_board.cube)
 
         # Record the move in the move history
         self._record_move(action, from_figure_colour, to_figure_colour)
-        print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(14, ' ') for hist in self.move_history[-1: -6: -1]]))
+        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(14, ' ') for hist in self.move_history[-1: -6: -1]]))
 
         if message:
             return message

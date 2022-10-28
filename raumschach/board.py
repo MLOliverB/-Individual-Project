@@ -92,10 +92,15 @@ class ChessBoard:
         for i in (range(2) if not colour else [0] if colour == Colour.WHITE else [1]):
             # Simulate each ally move and capture and delete those actions that directly put the ally king in check
             ally_moves = moves[i]
+            enemy_king_pos = white_king_position if colours[i] == Colour.BLACK else black_king_position
             for ally_piece in ally_moves:
                 ally_piece_moves = ally_moves[ally_piece]
                 safe_moves = set()
                 for piece_move in ally_piece_moves:
+                    # TODO IMPORTANT - Extend move simulation by checking whether the enemy king is put check-mate -> if we do then we don't even need to simulate the move
+                    if piece_move == enemy_king_pos:
+                        safe_moves.add(piece_move)
+                        continue
                     sim_board_a = np.array(board_a) # Copy the board for the simulation
                     ChessBoard.move(sim_board_a, ally_piece, piece_move) # simulate the move
                     ally_king_pos = piece_move if (King.id*colours[i]) == sim_board_a[piece_move] else king_positions[i]

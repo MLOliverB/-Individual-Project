@@ -26,7 +26,16 @@ from raumschach.render import render_board_ascii, render_figure_moves_ascii
 # game.play()
 
 game = ChessGame(RandomPlayer("P1"), RandomPlayer("P2"), 5)
-game.play()
+print(game.play())
+
+# counter = [0, 0, 0]
+# for i in range(100):
+#     print(i)
+#     game = ChessGame(RandomPlayer("P1"), RandomPlayer("P2"), 5)
+#     win_player = game.play()
+#     counter[1+win_player] += 1
+# print(f"Black wins: {counter[0]} Draws: {counter[1]} White wins: {counter[2]}")
+
 
 # threefold_repetition_script = ['N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3']
 # game = ChessGame(DummyPlayer("P1"), DummyPlayer("P2"), 5)
