@@ -38,12 +38,12 @@ class Figure(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def move_or_capture(self):
+    def passive_or_capture(self):
         pass
 
     @property
     @abstractmethod
-    def moves(self):
+    def passives(self):
         pass
 
     @property
@@ -57,8 +57,8 @@ class Pawn(Figure):
     name = ('p', "Pawn", 'P')
     value = 1 # Set as the unit value
     can_jump = False
-    move_or_capture = []
-    moves = [
+    passive_or_capture = []
+    passives = [
         lambda x, c: (1*c, 0, 0, None),
         lambda x, c: (0, 1*c, 0, None),
     ]
@@ -75,7 +75,7 @@ class Unicorn(Figure):
     name = ('u', "Unicorn", 'U')
     value = 3 # Subject to change
     can_jump = False
-    move_or_capture = [
+    passive_or_capture = [
         lambda x, c: (x, x, x, x+1),
         lambda x, c: (-x, -x, -x, x+1),
         lambda x, c: (x, -x, x, x+1),
@@ -85,7 +85,7 @@ class Unicorn(Figure):
         lambda x, c: (-x, x, x, x+1),
         lambda x, c: (x, -x, -x, x+1),
     ]
-    moves = []
+    passives = []
     captures = []
 
 class Rook(Figure):
@@ -93,7 +93,7 @@ class Rook(Figure):
     name = ('r', "Rook", 'R')
     value = 5 # Subject to change
     can_jump = False
-    move_or_capture = [
+    passive_or_capture = [
         lambda x, c: (x, 0, 0, x+1),
         lambda x, c: (-x, 0, 0, x+1),
         lambda x, c: (0, x, 0, x+1),
@@ -101,7 +101,7 @@ class Rook(Figure):
         lambda x, c: (0, 0, x, x+1),
         lambda x, c: (0, 0, -x, x+1),
     ]
-    moves = []
+    passives = []
     captures = []
 
 class Bishop(Figure):
@@ -109,7 +109,7 @@ class Bishop(Figure):
     name = ('b', "Bishop", 'B')
     value =  5 # Subject to change
     can_jump = False
-    move_or_capture = [
+    passive_or_capture = [
         lambda x, c: (x, x, 0, x+1),
         lambda x, c: (-x, -x, 0, x+1),
         lambda x, c: (0, x, -x, x+1),
@@ -119,7 +119,7 @@ class Bishop(Figure):
         lambda x, c: (0, x, x, x+1),
         lambda x, c: (0, -x, -x, x+1),
     ]
-    moves = []
+    passives = []
     captures = []
 
 class Knight(Figure):
@@ -127,7 +127,7 @@ class Knight(Figure):
     name = ('n', "Knight", 'N')
     value = 9 # Subject to change
     can_jump = True
-    move_or_capture = [
+    passive_or_capture = [
         lambda x, c: (0, 1, 2, None),
         lambda x, c: (0, 1, -2, None),
         lambda x, c: (0, -1, 2, None),
@@ -155,7 +155,7 @@ class Knight(Figure):
         lambda x, c: (-2, 1, 0, None),
         lambda x, c: (-2, -1, 0, None),
     ]
-    moves = []
+    passives = []
     captures = []
 
 class Queen(Figure):
@@ -163,7 +163,7 @@ class Queen(Figure):
     name = ('q', "Queen", 'Q')
     value = 15 # Subject to change
     can_jump = False
-    move_or_capture = [
+    passive_or_capture = [
         # Unicorn Moves
         lambda x, c: (x, x, x, x+1),
         lambda x, c: (-x, -x, -x, x+1),
@@ -190,7 +190,7 @@ class Queen(Figure):
         lambda x, c: (0, x, x, x+1),
         lambda x, c: (0, -x, -x, x+1),
     ]
-    moves = []
+    passives = []
     captures = []
 
 class King(Figure):
@@ -198,7 +198,7 @@ class King(Figure):
     name = ('k', "King", 'K')
     value = sys.maxsize
     can_jump = False
-    move_or_capture = [
+    passive_or_capture = [
         lambda x, c: (-1, -1, -1, None),
         lambda x, c: (-1, -1, 0, None),
         lambda x, c: (-1, -1, 1, None),
@@ -229,9 +229,11 @@ class King(Figure):
         lambda x, c: (1, 1, 0, None),
         lambda x, c: (1, 1, 1, None),
     ]
-    moves = []
+    passives = []
     captures = []
 
+
+PROMOTABLE_FIGURES = [Unicorn, Rook, Bishop, Knight, Queen]
 
 
 FIGURE_ID_MAP = {
