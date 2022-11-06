@@ -92,41 +92,108 @@ class ChessBoard:
                 if piece_captures:
                     ally_captures[(board_a[piece_pos], piece_pos)] = set(piece_captures)
 
+        safe_passives = [{}, {}]
+        safe_captures = [{}, {}]
+
         # Simulate each possible move and delete those that directly put the ally king in check (since those are illegal moves)
-        # moves = [passives, captures]
-        # for c in range(2):
-        #     if colours[c] == Colour.BLACK:
-        #         continue
-        #     enemy_king_pos = white_king_position if colours[i] == Colour.BLACK else black_king_position
-        #     for pc in range(2):
-        #         ally_moves = moves[pc][c]
-        #         for (from_piece, from_pos) in ally_moves:
-        #             safe_moves = set()
-        #             for (to_piece, to_pos) in ally_moves[(from_piece, from_pos)]:
-        #                 if to_pos == enemy_king_pos: # If we are capturing the enemy king with this move, we can simply skip the simulation
-        #                     safe_moves.add((to_piece, to_pos))
-        #                 else:
-        #                     sim_board_a = np.array(board_a) # Copy board for simulation
-        #                     ChessBoard.move(sim_board_a, (from_piece, from_pos), (to_piece, to_pos))
-        #                     ally_king_pos = to_pos if to_piece == King.id*colours[i] else king_positions[i]
-        #                     is_ally_king_under_threat = False
-        #                     enemy_positions = np.asarray((sim_board_a > 0).nonzero()).T if -1*colours[i] == Colour.WHITE else np.asarray((sim_board_a < 0).nonzero()).T
-        #                     for enemy_pos in [ (p[0], p[1], p[2]) for p in enemy_positions ]:
-        #                         enemy_passives, enemy_captures = ChessBoard._generate_figure_passives_captures(sim_board_a, enemy_pos)
-        #                         enemy_passive_positions = [x[1] for x in enemy_passives]
-        #                         enemy_capture_positions = [x[1] for x in enemy_captures]
-        #                         if ally_king_pos in enemy_capture_positions or ally_king_pos in enemy_passive_positions:
-        #                             is_ally_king_under_threat = True
-        #                             break
-        #                     if not is_ally_king_under_threat:
-        #                         safe_moves.add((to_piece, to_pos))
-        #             ally_moves[(from_piece, from_pos)] = safe_moves
+
+        for (pw_from_piece_id, pw_from_pos) in passives[0]: # White passives
+            safe_w_passives = set()
+            for (pw_to_piece_id, pw_to_pos) in passives[0][(pw_from_piece_id, pw_from_pos)]:
+                pw_ally_king_pos = white_king_position
+                pw_enemy_king_pos = black_king_position
+                if pw_to_pos == pw_enemy_king_pos:
+                    safe_w_passives.add((pw_to_piece_id, pw_to_pos))
+                else:
+                    pw_sim_board_a = np.array(board_a)
+                    ChessBoard.move(pw_sim_board_a, (pw_from_piece_id, pw_from_pos), (pw_to_piece_id, pw_to_pos))
+                    if pw_to_piece_id == King.id * 1: # We are moving the king
+                        pw_ally_king_pos = pw_to_pos
+                    pw_is_ally_king_under_threat = False
+                    pw_enemy_positions = np.asarray((pw_sim_board_a < 0).nonzero()).T
+                    for pw_enemy_pos in [ (p[0], p[1], p[2]) for p in pw_enemy_positions ]:
+                        pw_enemy_captures = ChessBoard._generate_figure_passives_captures(pw_sim_board_a, pw_enemy_pos)[1]
+                        if pw_ally_king_pos in [ x[1] for x in pw_enemy_captures ]:
+                            pw_is_ally_king_under_threat = True
+                            break
+                    if not pw_is_ally_king_under_threat:
+                        safe_w_passives.add((pw_to_piece_id, pw_to_pos))
+            safe_passives[0][(pw_from_piece_id, pw_from_pos)] = safe_w_passives
+
+        for (cw_from_piece_id, cw_from_pos) in captures[0]: # White captures
+            safe_w_captures = set()
+            for (cw_to_piece_id, cw_to_pos) in captures[0][(cw_from_piece_id, cw_from_pos)]:
+                cw_ally_king_pos = white_king_position
+                cw_enemy_king_pos = black_king_position
+                if cw_to_pos == cw_enemy_king_pos:
+                    safe_w_captures.add((cw_to_piece_id, cw_to_pos))
+                else:
+                    cw_sim_board_a = np.array(board_a)
+                    ChessBoard.move(cw_sim_board_a, (cw_from_piece_id, cw_from_pos), (cw_to_piece_id, cw_to_pos))
+                    if cw_to_piece_id == King.id * 1: # We are moving the king
+                        cw_ally_king_pos = cw_to_pos
+                    cw_is_ally_king_under_threat = False
+                    cw_enemy_positions = np.asarray((cw_sim_board_a < 0).nonzero()).T
+                    for cw_enemy_pos in [ (p[0], p[1], p[2]) for p in cw_enemy_positions ]:
+                        cw_enemy_captures = ChessBoard._generate_figure_passives_captures(cw_sim_board_a, cw_enemy_pos)[1]
+                        if cw_ally_king_pos in [ x[1] for x in cw_enemy_captures ]:
+                            cw_is_ally_king_under_threat = True
+                            break
+                    if not cw_is_ally_king_under_threat:
+                        safe_w_captures.add((cw_to_piece_id, cw_to_pos))
+            safe_captures[0][(cw_from_piece_id, cw_from_pos)] = safe_w_captures
+
+        for (pb_from_piece_id, pb_from_pos) in passives[1]: # Black passives
+            safe_b_passives = set()
+            for (pb_to_piece_id, pb_to_pos) in passives[1][(pb_from_piece_id, pb_from_pos)]:
+                pb_ally_king_pos = black_king_position
+                pb_enemy_king_pos = white_king_position
+                if pb_to_pos == pb_enemy_king_pos:
+                    safe_b_passives.add((pb_to_piece_id, pb_to_pos))
+                else:
+                    pb_sim_board_a = np.array(board_a)
+                    ChessBoard.move(pb_sim_board_a, (pb_from_piece_id, pb_from_pos), (pb_to_piece_id, pb_to_pos))
+                    if pb_to_piece_id == King.id * -1: # We are moving the king
+                        pb_ally_king_pos = pb_to_pos
+                    pb_is_ally_king_under_threat = False
+                    pb_enemy_positions = np.asarray((pb_sim_board_a > 0).nonzero()).T
+                    for pb_enemy_pos in [ (p[0], p[1], p[2]) for p in pb_enemy_positions ]:
+                        pb_enemy_captures = ChessBoard._generate_figure_passives_captures(pb_sim_board_a, pb_enemy_pos)[1]
+                        if pb_ally_king_pos in [ x[1] for x in pb_enemy_captures ]:
+                            pb_is_ally_king_under_threat = True
+                            break
+                    if not pb_is_ally_king_under_threat:
+                        safe_b_passives.add((pb_to_piece_id, pb_to_pos))
+            safe_passives[1][(pb_from_piece_id, pb_from_pos)] = safe_b_passives
+
+        for (cb_from_piece_id, cb_from_pos) in captures[1]: # Black captures
+            safe_b_captures = set()
+            for (cb_to_piece_id, cb_to_pos) in captures[1][(cb_from_piece_id, cb_from_pos)]:
+                cb_ally_king_pos = black_king_position
+                cb_enemy_king_pos = white_king_position
+                if cb_to_pos == cb_enemy_king_pos:
+                    safe_b_captures.add((cb_to_piece_id, cb_to_pos))
+                else:
+                    cb_sim_board_a = np.array(board_a)
+                    ChessBoard.move(cb_sim_board_a, (cb_from_piece_id, cb_from_pos), (cb_to_piece_id, cb_to_pos))
+                    if cb_to_piece_id == King.id * -1: # We are moving the king
+                        cb_ally_king_pos = cb_to_pos
+                    cb_is_ally_king_under_threat = False
+                    cb_enemy_positions = np.asarray((cb_sim_board_a > 0).nonzero()).T
+                    for cb_enemy_pos in [ (p[0], p[1], p[2]) for p in cb_enemy_positions ]:
+                        cb_enemy_captures = ChessBoard._generate_figure_passives_captures(cb_sim_board_a, cb_enemy_pos)[1]
+                        if cb_ally_king_pos in [ x[1] for x in cb_enemy_captures ]:
+                            cb_is_ally_king_under_threat = True
+                            break
+                    if not cb_is_ally_king_under_threat:
+                        safe_b_captures.add((cb_to_piece_id, cb_to_pos))
+            safe_captures[1][(cb_from_piece_id, cb_from_pos)] = safe_b_captures
 
         # Revert all sets back to lists
-        white_passives = {key: [*value] for (key, value) in passives[0].items() if value}
-        white_captures = {key: [*value] for (key, value) in captures[0].items() if value}
-        black_passives = {key: [*value] for (key, value) in passives[1].items() if value}
-        black_captures = {key: [*value] for (key, value) in captures[1].items() if value}
+        white_passives = {key: [*value] for (key, value) in safe_passives[0].items() if value}
+        white_captures = {key: [*value] for (key, value) in safe_captures[0].items() if value}
+        black_passives = {key: [*value] for (key, value) in safe_passives[1].items() if value}
+        black_captures = {key: [*value] for (key, value) in safe_captures[1].items() if value}
 
         
         # Return the appropriate tuple in regard to colour

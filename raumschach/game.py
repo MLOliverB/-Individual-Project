@@ -141,36 +141,36 @@ class ChessGame():
 
         # Generate next moves of white and black pieces and assign them to either this player or the enemy player based on colour
         if not message: # The game has not yet ended
-            white_next_passives_captures, black_next_passives_captures = ChessBoard.get_passives_captures(self.chess_board.cube)
-            current_player_passives_captures = [black_next_passives_captures, None, white_next_passives_captures][1+colour]
-            next_player_passives_captures = [black_next_passives_captures, None, white_next_passives_captures][1+enemy_colour]
-            self.next_player_passives_captures = next_player_passives_captures
+            white_next_moves, black_next_moves = ChessBoard.get_passives_captures(self.chess_board.cube)
+            this_p_moves = [black_next_moves, None, white_next_moves][1+colour]
+            next_p_moves = [black_next_moves, None, white_next_moves][1+enemy_colour]
+            self.next_player_passives_captures = next_p_moves
 
 
         # Determine whether we (still) have a check situation
         if not message: # The game has not yet ended
-            current_player_captures = current_player_passives_captures[1]
-            next_player_king_position = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * enemy_colour)))
-            next_player_under_check = False
-            for current_from_piece_coord in current_player_captures:
-                if next_player_king_position in [ x[1] for x in current_player_captures[current_from_piece_coord] ]:
-                    next_player_under_check = True
+            this_p_captures = this_p_moves[1]
+            next_p_king_pos = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * enemy_colour)))
+            next_p_checked = False
+            for this_p_from_idcoord in this_p_captures:
+                if next_p_king_pos in [ x[1] for x in this_p_captures[this_p_from_idcoord] ]:
+                    next_p_checked = True
                     break
-            self.is_checked[enemy_player_num] = next_player_under_check
+            self.is_checked[enemy_player_num] = next_p_checked
 
-            next_player_captures = next_player_passives_captures[1]
-            current_player_king_position = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * colour)))
-            current_player_under_check = False
-            for next_from_piece_coord in next_player_captures:
-                if current_player_king_position in [ x[1] for x in next_player_captures[next_from_piece_coord] ]:
-                    current_player_under_check = True
+            next_p_captures = next_p_moves[1]
+            this_p_king_pos = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * colour)))
+            this_p_checked = False
+            for next_p_from_idcoord in next_p_captures:
+                if this_p_king_pos in [ x[1] for x in next_p_captures[next_p_from_idcoord] ]:
+                    this_p_checked = True
                     break
-            self.is_checked[player_num] = current_player_under_check
+            self.is_checked[player_num] = this_p_checked
             
 
         # Check if the enemy player is able to do any moves on their next turn
         if not message: # The game has not yet ended
-            if not next_player_passives_captures[0] and not next_player_passives_captures[1]:
+            if not next_p_moves[0] and not next_p_moves[1]:
                 if self.is_checked[enemy_player_num]:
                     self.is_checked[enemy_player_num] = False
                     self.is_checkmate[enemy_player_num] = True

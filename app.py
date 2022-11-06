@@ -22,7 +22,7 @@ from raumschach.player import ConsolePlayer, DummyPlayer, RandomPlayer
 # print(game.play())
 
 counter = [0, 0, 0]
-for i in range(100):
+for i in range(10):
     print(i)
     game = ChessGame(RandomPlayer("P1"), RandomPlayer("P2"), 5)
     win_player = game.play()
