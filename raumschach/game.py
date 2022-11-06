@@ -24,7 +24,7 @@ class ChessGame():
         self.state_repetition_map = {} # Threefold-repetition rule (if the same board state with the same moves occurs for the third time, the game ends in a draw)
         self.is_checked = [False, False]
         self.is_checkmate = [False, False]
-        self.next_player_moves_captures = None
+        self.next_player_passives_captures = None
 
     def play_script(self, script):
         for i in range(len(self.players)):
@@ -62,38 +62,43 @@ class ChessGame():
         # Generate all possible moves for the pieces of this player
         # We need to generate the moves of all colours however since the King cannot put himself into check
 
-        moves, captures = self.next_player_moves_captures if self.next_player_moves_captures != None else ChessBoard.get_moves_captures(self.chess_board.cube, colour)
+        passives, captures = self.next_player_passives_captures if self.next_player_passives_captures != None else ChessBoard.get_passives_captures(self.chess_board.cube, colour)
 
         # send the observation to the player and receive the corresponding action
         # The action is only allowed to be a move
         hash_val = self.chess_board.cube.data.tobytes()
         state_repetition = self.state_repetition_map[hash_val] if hash_val in self.state_repetition_map else 0
-        action = player.send_action(player.receive_observation(BoardState(self.chess_board.cube, colour, moves, captures, self.no_progress, state_repetition)))
-        if (type(action) == str):
+        action = player.send_action(player.receive_observation(BoardState(self.chess_board.cube, colour, passives, captures, self.no_progress, state_repetition)))
+        if (type(action) == str): # TODO Turn read_recorded_move into a static method and call it right in the dummy player (We want actions to always have the same format)
             action = self._read_recorded_move(action)
-        from_pos, to_pos = action
+        
+        from_action, to_action = action
+        (from_piece, from_coord), (to_piece, to_coord) = action
 
         # check if the action is legal
-        if (from_pos not in moves) and (from_pos not in captures):
+        if (from_action not in passives) and (from_action not in captures):
             raise IllegalActionException("This piece does not exist")
-        elif (from_pos in moves and to_pos not in moves[from_pos]) and (from_pos in captures and to_pos not in captures[from_pos]):
-            raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
+        elif (from_action not in passives or (from_action in passives and to_action not in passives[from_action])):
+            if (from_action not in captures or (from_action in captures and to_action not in captures[from_action])):
+                raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
 
         
 
         # Implement the action on the chess board
-        from_figure_colour = FIGURE_ID_MAP[self.chess_board[from_pos]] # Get the figure standing at the from position
-        to_figure_colour = FIGURE_ID_MAP[self.chess_board[to_pos]] if self.chess_board[to_pos] != 0 else None # Get the figure standing at the to position
-        ChessBoard.move(self.chess_board.cube, from_pos, to_pos)
+        from_figure, from_colour = FIGURE_ID_MAP[self.chess_board[from_coord]] # Get the figure standing at the from position
+        to_figure, to_colour = FIGURE_ID_MAP[self.chess_board[to_coord]] if self.chess_board[to_coord] != 0 else (None, None) # Get the figure standing at the to position
+        ChessBoard.move(self.chess_board.cube, from_action, to_action)
 
         # Update the no progress rule
         if not message: # The game has not yet ended
             self.no_progress += 1
-            if from_figure_colour[0] == Pawn:
+            if from_figure == Pawn:
                 self.no_progress = 0
-            elif from_pos in captures and to_pos in captures[from_pos]:
+            elif from_action in captures and to_action in captures[from_action]:
                 self.no_progress = 0
             elif self.no_progress > 50:
+                self.is_checked[player_num] = False
+                self.is_checked[enemy_player_num] = False
                 self.is_checkmate[player_num] = True
                 self.is_checkmate[enemy_player_num] = True
                 player.receive_reward(0, self.move_history)
@@ -111,6 +116,8 @@ class ChessGame():
                 self.state_repetition_map[hash_val] = 1
             # Check if threefold repetition rule applies
             if self.state_repetition_map[hash_val] >= 3:
+                self.is_checked[player_num] = False
+                self.is_checked[enemy_player_num] = False
                 self.is_checkmate[player_num] = True
                 self.is_checkmate[enemy_player_num] = True
                 player.receive_reward(0, self.move_history)
@@ -118,51 +125,52 @@ class ChessGame():
                 message = "The same board position has been repeated for the third time." # Draw
 
 
-        # Generate next moves of white and black pieces and assign them to either this player or the enemy player based on colour
-        white_next_moves_captures, black_next_moves_captures = ChessBoard.get_moves_captures(self.chess_board.cube)
-        current_player_moves_captures = [black_next_moves_captures, None, white_next_moves_captures][1+colour]
-        next_player_moves_captures = [black_next_moves_captures, None, white_next_moves_captures][1+enemy_colour]
-        self.next_player_moves_captures = next_player_moves_captures
-
         if not message: # The game has not yet ended
             # Determine whether we have a checkmate
-            if self.is_checked[enemy_player_num]:
+            if True or self.is_checked[enemy_player_num]:
                 # The enemy player is under check
                 # Simply check whether the enemy king has been captured i.e. if the king still stands on the board
                 if not np.any(self.chess_board.cube == (King.id * enemy_colour)):
                     self.is_checked[player_num] = False
-                    self.is_checkmate[player_num] = True
+                    self.is_checked[enemy_player_num] = False
+                    self.is_checkmate[enemy_player_num] = True
                     player.receive_reward(1, self.move_history)
                     enemy_player.receive_reward(-1, self.move_history)
                     message = f"Checkmate - '{player.name}' ({Colour.string(colour)}) has captured the enemy's king"
 
 
+        # Generate next moves of white and black pieces and assign them to either this player or the enemy player based on colour
+        if not message: # The game has not yet ended
+            white_next_moves, black_next_moves = ChessBoard.get_passives_captures(self.chess_board.cube)
+            this_p_moves = [black_next_moves, None, white_next_moves][1+colour]
+            next_p_moves = [black_next_moves, None, white_next_moves][1+enemy_colour]
+            self.next_player_passives_captures = next_p_moves
+
+
         # Determine whether we (still) have a check situation
         if not message: # The game has not yet ended
-            current_player_captures = current_player_moves_captures[1]
-            next_player_king_position = np.where(self.chess_board.cube==(King.id * enemy_colour))
-            next_player_king_position = (next_player_king_position[0][0], next_player_king_position[1][0], next_player_king_position[2][0])
-            next_player_under_check = False
-            for ally_piece in current_player_captures:
-                if next_player_king_position in current_player_captures[ally_piece]:
-                    next_player_under_check = True
+            this_p_captures = this_p_moves[1]
+            next_p_king_pos = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * enemy_colour)))
+            next_p_checked = False
+            for this_p_from_idcoord in this_p_captures:
+                if next_p_king_pos in [ x[1] for x in this_p_captures[this_p_from_idcoord] ]:
+                    next_p_checked = True
                     break
-            self.is_checked[enemy_player_num] = next_player_under_check
+            self.is_checked[enemy_player_num] = next_p_checked
 
-            next_player_captures = next_player_moves_captures[1]
-            current_player_king_position = np.where(self.chess_board.cube==(King.id * colour))
-            current_player_king_position = (current_player_king_position[0][0], current_player_king_position[1][0], current_player_king_position[2][0])
-            current_player_under_check = False
-            for enemy_piece in next_player_captures:
-                if current_player_king_position in next_player_captures[enemy_piece]:
-                    current_player_under_check = True
+            next_p_captures = next_p_moves[1]
+            this_p_king_pos = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * colour)))
+            this_p_checked = False
+            for next_p_from_idcoord in next_p_captures:
+                if this_p_king_pos in [ x[1] for x in next_p_captures[next_p_from_idcoord] ]:
+                    this_p_checked = True
                     break
-            self.is_checked[player_num] = current_player_under_check
+            self.is_checked[player_num] = this_p_checked
             
 
         # Check if the enemy player is able to do any moves on their next turn
         if not message: # The game has not yet ended
-            if not next_player_moves_captures[0] and not next_player_moves_captures[1]:
+            if not next_p_moves[0] and not next_p_moves[1]:
                 if self.is_checked[enemy_player_num]:
                     self.is_checked[enemy_player_num] = False
                     self.is_checkmate[enemy_player_num] = True
@@ -179,8 +187,8 @@ class ChessGame():
         # render_board_ascii(self.chess_board.cube)
 
         # Record the move in the move history
-        self._record_move(action, from_figure_colour, to_figure_colour)
-        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(14, ' ') for hist in self.move_history[-1: -6: -1]]))
+        self._record_move(action, (from_figure, from_colour), (to_figure, to_colour))
+        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
 
         if message:
             return message
@@ -192,8 +200,12 @@ class ChessGame():
 
     def _record_move(self, action, from_figure_id, to_figure_id):
         from_figure, from_colour = from_figure_id
-        move_capture_sign = "-" if to_figure_id == None else "x"
-        s = f"{(from_figure.name[1+from_colour])}:{ChessBoard.get_pos_code(action[0])}{move_capture_sign}{ChessBoard.get_pos_code(action[1])}"
+        to_figure, to_colour = to_figure_id
+        (from_piece, from_coord), (to_piece, to_coord) = action
+        move_sign = "-" if to_figure == None else "x"
+        s = f"{(from_figure.name[1+from_colour])}:{ChessBoard.get_pos_code(from_coord)}{move_sign}{ChessBoard.get_pos_code(to_coord)}"
+        if from_piece != to_piece:
+            s += f"={FIGURE_ID_MAP[to_piece][0].name[1+from_colour]}"
         if all(self.is_checked):
             s += "++"
         elif self.is_checked[0]:

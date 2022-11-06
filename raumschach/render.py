@@ -1,8 +1,7 @@
 import numpy as np
 import math
-from raumschach.board import ChessBoard
 
-from raumschach.figures import FIGURE_ID_MAP, Colour
+from raumschach.figures import FIGURE_ID_MAP
 
 BOARD_GAP_H = 2
 BOARD_GAP_V = 1
@@ -12,6 +11,8 @@ OFFSET_V = 3
 
 
 def render_board_ascii(board_a):
+    render_figure_moves_ascii(board_a, None)
+    return
     size = board_a.shape[0]
     s = np.array(board_a)
     for pos in [(i, j, k) for i in range(size) for j in range(size) for k in range(size)]:
@@ -52,23 +53,25 @@ def render_board_ascii(board_a):
 
 
 
-def render_figure_moves_ascii(board_a, figure_pos):
+def render_figure_moves_ascii(board_a, moves):
     size = board_a.shape[0]
     s = np.array(board_a)
-    if s[figure_pos] == 0:
-        render_board_ascii(board_a)
-        return
 
-    moves, captures = ChessBoard.generate_figure_moves_captures(board_a, figure_pos)
+    if moves:
+        passives, captures = moves
+        passive_pieces, passive_coords = list(zip(*passives))
+        capture_pieces, capture_coords = list(zip(*captures))
+    else:
+        passive_pieces, passive_coords, capture_pieces, capture_coords = [], [], [], []
 
     for pos in [(i, j, k) for i in range(size) for j in range(size) for k in range(size)]:
         if s[pos] in FIGURE_ID_MAP:
             figure, colour = FIGURE_ID_MAP[s[pos]]
             s[pos] = ord(figure.name[1+colour])
-            if pos in captures:
+            if pos in capture_coords:
                 s[pos] = -s[pos]
-    for move in moves:
-        s[move] = ord('X')
+    for passive_pos in passive_coords:
+        s[passive_pos] = ord('X')
                 
 
     hgap = BOARD_GAP_H
