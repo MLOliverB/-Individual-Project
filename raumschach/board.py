@@ -67,16 +67,10 @@ class ChessBoard:
         white_positions = np.asarray((board_a > 0).nonzero()).T
         black_positions = np.asarray((board_a < 0).nonzero()).T
 
-        # print(np.where(board_a==(King.id * Colour.WHITE)))
-        # print(np.where(board_a==(King.id * Colour.BLACK)))
-
         white_king_position = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(board_a==(King.id * Colour.WHITE)))
         black_king_position = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(board_a==(King.id * Colour.BLACK)))
 
         board_positions = [white_positions, black_positions]
-        king_positions = [white_king_position, black_king_position]
-
-        colours = [Colour.WHITE, Colour.BLACK]
 
         passives = [{}, {}]
         captures = [{}, {}]
