@@ -33,22 +33,32 @@ class Figure(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def can_jump(self):
+    def single_passive_or_capture(self):
         pass
 
     @property
     @abstractmethod
-    def passive_or_capture(self):
+    def single_passives(self):
         pass
 
     @property
     @abstractmethod
-    def passives(self):
+    def single_captures(self):
         pass
 
     @property
     @abstractmethod
-    def captures(self):
+    def successive_passive_or_capture(self):
+        pass
+
+    @property
+    @abstractmethod
+    def successive_passives(self):
+        pass
+
+    @property
+    @abstractmethod
+    def successive_captures(self):
         pass
 
 
@@ -190,6 +200,7 @@ class King(Figure):
     successive_captures = []
 
 
+FIGURES = [Pawn, Unicorn, Rook, Bishop, Knight, Queen, King]
 PROMOTABLE_FIGURES = [Unicorn, Rook, Bishop, Knight, Queen]
 
 

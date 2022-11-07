@@ -2,8 +2,10 @@ from abc import ABCMeta, abstractmethod
 import random
 from raumschach.board import ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, Colour
+from raumschach.game import ChessGame
 
 from raumschach.render import render_board_ascii, render_figure_moves_ascii
+import numpy as np
 
 
 class Player(object, metaclass=ABCMeta):
@@ -32,7 +34,7 @@ class DummyPlayer(Player):
 
     def send_action(self, observation):
         render_board_ascii(observation.cb)
-        return self.script.pop(0)
+        return ChessGame.read_recorded_move(self.script.pop(0))
 
     def receive_reward(self, reward_value, move_history):
         return super().receive_reward(reward_value, move_history)
@@ -46,6 +48,18 @@ class RandomPlayer(Player):
         return board_state
 
     def send_action(self, observation):
+        moves = None
+        if type(observation.passives) == type(None) and type(observation.captures) == type(None):
+            raise Exception("No moves available")
+        elif type(observation.passives) == type(None):
+            moves = observation.captures
+        elif type(observation.captures) == type(None):
+            moves = observation.passives
+        else:
+            moves = np.concatenate((observation.passives, observation.captures))
+        rand = np.random.randint(0, moves.shape[0])
+        return moves[rand]
+        raise Exception()
         pieces = [*set([*observation.passives] + [*observation.captures])]
         from_pos = pieces[random.randint(0, len(pieces)-1)] # random.choice([*set([*observation.passives] + [*observation.captures])])
         moves = observation.passives[from_pos] if from_pos in observation.passives else []
