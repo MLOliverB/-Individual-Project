@@ -49,7 +49,7 @@ class ChessGame():
         elif self.is_checkmate[1]:
             print("White wins!")
             winner = 1
-        print("\nMove history: ")
+        print(f"\nMove history: ({len(self.move_history)})")
         print(self.move_history)
         return winner
 
