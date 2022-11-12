@@ -90,6 +90,7 @@ class ChessBoard:
         safe_captures = [{}, {}]
 
         # Simulate each possible move and delete those that directly put the ally king in check (since those are illegal moves)
+        # TODO Encapsulate this in another method to avoid code duplication
 
         for (pw_from_piece_id, pw_from_pos) in passives[0]: # White passives
             safe_w_passives = set()

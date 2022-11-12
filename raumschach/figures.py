@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-import sys
+import numpy as np
 
 
 class Colour(object):
@@ -196,7 +196,7 @@ class Queen(Figure):
 class King(Figure):
     id = 7
     name = ('k', "King", 'K')
-    value = sys.maxsize
+    value = np.inf
     can_jump = False
     passive_or_capture = [
         lambda x, c: (-1, -1, -1, None),
