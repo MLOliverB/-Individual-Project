@@ -102,25 +102,16 @@ class MiniMaxPlayer(Player):
         board_a = observation.cb
         moves = self._passives_captures_dict_to_move_list(observation.passives, observation.captures)
         best_move_ix, best_move_value = self._resursive_best_move_values(1, self.search_depth, moves, board_a, observation.colour, observation.colour)
+        # print()
         return moves[best_move_ix]
 
     def _resursive_best_move_values(self, depth, max_depth, moves, board_a, player_colour, current_colour):
-        # if depth > max_depth:
-        #     return 0, 0
-        # elif King.id*player_colour not in board_a: # The enemy player has won
-        #     return np.inf*-1, np.inf*-1
-        # elif King.id*-1*player_colour not in board_a: # This player has won
-        #     return np.inf, np.inf
-        # else:
         len_moves = len(moves)
         move_values = np.full(len_moves, -1*np.inf, dtype=np.float32)
         for i in range(len_moves):
             from_move, to_move = moves[i]
             sim_board_a = np.array(board_a)
             ChessBoard.move(sim_board_a, from_move, to_move)
-            sim_passives, sim_captures = ChessBoard.get_passives_captures(sim_board_a, current_colour)
-            sim_moves = self._passives_captures_dict_to_move_list(sim_passives, sim_captures)
-
             best_sim_move_ix, best_sim_value = None, None
             if depth+1 > max_depth:
                 best_sim_move_ix, best_sim_value = 0, 0
@@ -129,22 +120,43 @@ class MiniMaxPlayer(Player):
             elif King.id*-1*player_colour not in sim_board_a: # This player has won
                 best_sim_move_ix, best_sim_value =  np.inf, np.inf
             else:
+                sim_passives, sim_captures = ChessBoard.get_passives_captures(sim_board_a, current_colour)
+                sim_moves = self._passives_captures_dict_to_move_list(sim_passives, sim_captures)
                 best_sim_move_ix, best_sim_value = self._resursive_best_move_values(depth+1, max_depth, sim_moves, sim_board_a, player_colour, current_colour*-1)
 
-            sim_board_a = sim_board_a if current_colour == Colour.WHITE else sim_board_a*-1
+            sim_board_a = sim_board_a if player_colour == Colour.WHITE else sim_board_a*-1
             sim_value_board = self.vectorized_value_transform(sim_board_a)
             if np.inf in sim_value_board and -1*np.inf in sim_value_board:
                 sim_value_board[sim_value_board == np.inf] = 0
                 sim_value_board[sim_value_board == -1*np.inf] = 0
             sim_board_value = np.sum(sim_value_board)
-            move_values[i] = sim_board_value + np.power(self.gamma, depth)*best_sim_value # Value of current board state plus best possible values of future moves (assuming enemy has the same policy)
+            move_values[i] = sim_board_value + best_sim_value*np.power(self.gamma, depth) # Value of current board state plus discounted best possible values of future moves (assuming enemy has the same policy)
+            # if depth == 1:
+            #     print("\r", move_values, end='')
+        
+        best_move_ix = None
         if current_colour == player_colour:
-            move_values[move_values != np.max(move_values)] = 0
+            max_val_ixs = np.where(move_values == np.max(move_values))[0]
+            best_move_ix = max_val_ixs[self.rng.integers(0, max_val_ixs.shape[0])]
         else:
-            move_values[move_values != np.min(move_values)] = 0
-        max_move_values = move_values.nonzero()[0]
-        best_move_ix = max_move_values[self.rng.integers(0, max_move_values.shape[0])]
+            min_val_ixs = np.where(move_values == np.min(move_values))[0]
+            best_move_ix = min_val_ixs[self.rng.integers(0, min_val_ixs.shape[0])]
         return (best_move_ix, move_values[best_move_ix])
+
+        #     sim_board_a = sim_board_a if current_colour == Colour.WHITE else sim_board_a*-1
+        #     sim_value_board = self.vectorized_value_transform(sim_board_a)
+        #     if np.inf in sim_value_board and -1*np.inf in sim_value_board:
+        #         sim_value_board[sim_value_board == np.inf] = 0
+        #         sim_value_board[sim_value_board == -1*np.inf] = 0
+        #     sim_board_value = np.sum(sim_value_board)
+        #     move_values[i] = sim_board_value + np.power(self.gamma, depth)*best_sim_value # Value of current board state plus best possible values of future moves (assuming enemy has the same policy)
+        # if current_colour == player_colour:
+        #     move_values[move_values != np.max(move_values)] = 0
+        # else:
+        #     move_values[move_values != np.min(move_values)] = 0
+        # max_move_values = move_values.nonzero()[0]
+        # best_move_ix = max_move_values[self.rng.integers(0, max_move_values.shape[0])]
+        # return (best_move_ix, move_values[best_move_ix])
 
 
     def receive_reward(self, reward_value, move_history):

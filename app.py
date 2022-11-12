@@ -19,19 +19,19 @@ script = ['N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3', 'n:Eb
 # game = ChessGame(ConsolePlayer(), RandomPlayer(), 5)
 # game.play()
 
-game = ChessGame(MiniMaxPlayer(search_depth=1, rand_seed=1), MiniMaxPlayer(search_depth=1, rand_seed=1), 5)
-game.play()
+# game = ChessGame(MiniMaxPlayer(search_depth=2, rand_seed=1), MiniMaxPlayer(search_depth=2, rand_seed=1), 5)
+# game.play()
 
-# n = 100
-# counter = [0, 0, 0]
-# start_time = datetime.datetime.now()
-# for i in range(n):
-#     print(i)
-#     game = ChessGame(RandomPlayer(rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
-#     win_player = game.play()
-#     counter[1+win_player] += 1
-# stop_time = datetime.datetime.now()
-# print(f"Black wins: {counter[0]} Draws: {counter[1]} White wins: {counter[2]} -- Time taken for {n} runs: {(stop_time - start_time).total_seconds()} s")
+n = 1
+counter = [0, 0, 0]
+start_time = datetime.datetime.now()
+for i in range(n):
+    print(i)
+    game = ChessGame(RandomPlayer(rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
+    win_player = game.play()
+    counter[1+win_player] += 1
+stop_time = datetime.datetime.now()
+print(f"Black wins: {counter[0]} Draws: {counter[1]} White wins: {counter[2]} -- Time taken for {n} runs: {(stop_time - start_time).total_seconds()} s")
 
 
 # threefold_repetition_script = ['N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3']
