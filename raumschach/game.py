@@ -1,7 +1,7 @@
 import numpy as np
 
 from raumschach.board import INITIAL_5_5_BOARD_SETUP, BoardState, ChessBoard
-from raumschach.figures import FIGURE_ID_MAP, Colour, King, Pawn
+from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, Colour, King, Pawn
 from raumschach.render import render_board_ascii
 
 class IllegalActionException(Exception):
@@ -69,12 +69,11 @@ class ChessGame():
         hash_val = self.chess_board.cube.data.tobytes()
         state_repetition = self.state_repetition_map[hash_val] if hash_val in self.state_repetition_map else 0
         action = player.send_action(player.receive_observation(BoardState(self.chess_board.cube, colour, passives, captures, self.no_progress, state_repetition)))
-        if (type(action) == str): # TODO Turn read_recorded_move into a static method and call it right in the dummy player (We want actions to always have the same format)
-            action = self._read_recorded_move(action)
         
         from_action, to_action = action
         (from_piece, from_coord), (to_piece, to_coord) = action
 
+        # TODO Negative reward for doing illegal move
         # check if the action is legal
         if (from_action not in passives) and (from_action not in captures):
             raise IllegalActionException("This piece does not exist")
@@ -184,11 +183,11 @@ class ChessGame():
                     enemy_player.receive_reward(0, self.move_history)
                     message = f"'{enemy_player.name}' ({Colour.string(enemy_colour)}) is not checked and does not have any available moves - automatic stalemate"
 
-        # render_board_ascii(self.chess_board.cube)
-
         # Record the move in the move history
         self._record_move(action, (from_figure, from_colour), (to_figure, to_colour))
-        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
+
+        render_board_ascii(self.chess_board.cube)
+        print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
 
         if message:
             return message
@@ -209,11 +208,11 @@ class ChessGame():
         if all(self.is_checked):
             s += "++"
         elif self.is_checked[0]:
-            s += "+w"
+            s += "+"
         elif self.is_checked[1]:
-            s += "+b"
+            s += "+"
         elif all(self.is_checkmate):
-            s += "= ½-½"
+            s += " ½-½"
         elif any(self.is_checkmate):
             s += "#"
             if self.is_checkmate[0]:
@@ -222,8 +221,16 @@ class ChessGame():
                 s += " 1-0"
         self.move_history.append(s)
 
-    def _read_recorded_move(self, record):
-        figure_name, action = record.split(':')
-        from_pos = action[:3]
-        to_pos = action[4:7]
-        return (ChessBoard.get_pos_coord(from_pos), ChessBoard.get_pos_coord(to_pos))
+    @staticmethod
+    def read_recorded_move(record):
+        from_figure, from_colour = FIGURE_NAME_MAP[record[0]] 
+        from_pos = record[2:5]
+        to_pos = record[6:9]
+        to_figure, to_colour = from_figure, from_colour
+        if '=' in record:
+            to_figure, to_colour = FIGURE_NAME_MAP[record[10]]
+        from_coord = ChessBoard.get_pos_coord(from_pos)
+        to_coord = ChessBoard.get_pos_coord(to_pos)
+        from_tuple = (from_figure.id* from_colour, from_coord)
+        to_tuple   = (to_figure.id  * to_colour,   to_coord)
+        return (from_tuple, to_tuple)
