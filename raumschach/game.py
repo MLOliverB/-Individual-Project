@@ -135,7 +135,7 @@ class ChessGame():
                     self.is_checkmate[enemy_player_num] = True
                     player.receive_reward(1, self.move_history)
                     enemy_player.receive_reward(-1, self.move_history)
-                    message = f"Checkmate - '{player.name}' ({Colour.string(colour)}) has captured the enemy's king"
+                    message = f"Checkmate - ({Colour.string(colour)}) has captured the enemy's king"
 
 
         # Generate next moves of white and black pieces and assign them to either this player or the enemy player based on colour
@@ -175,19 +175,19 @@ class ChessGame():
                     self.is_checkmate[enemy_player_num] = True
                     player.receive_reward(1, self.move_history)
                     enemy_player.receive_reward(-1, self.move_history)
-                    message = f"'{enemy_player.name}' ({Colour.string(enemy_colour)}) is checked and does not have any available moves"
+                    message = f"({Colour.string(enemy_colour)}) is checked and does not have any available moves"
                 else:
                     self.is_checkmate[player_num]       = True
                     self.is_checkmate[enemy_player_num] = True
                     player.receive_reward(0, self.move_history)
                     enemy_player.receive_reward(0, self.move_history)
-                    message = f"'{enemy_player.name}' ({Colour.string(enemy_colour)}) is not checked and does not have any available moves - automatic stalemate"
+                    message = f"({Colour.string(enemy_colour)}) is not checked and does not have any available moves - automatic stalemate"
 
         # Record the move in the move history
         self._record_move(action, (from_figure, from_colour), (to_figure, to_colour))
 
-        render_board_ascii(self.chess_board.cube)
-        print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
+        # render_board_ascii(self.chess_board.cube)
+        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
 
         if message:
             return message
