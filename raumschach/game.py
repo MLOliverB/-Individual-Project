@@ -126,10 +126,10 @@ class ChessGame():
 
         if not message: # The game has not yet ended
             # Determine whether we have a checkmate
-            if True or self.is_checked[enemy_player_num]:
+            if True or self.is_checked[enemy_player_num]: # TODO Ideally this True is obsolete
                 # The enemy player is under check
                 # Simply check whether the enemy king has been captured i.e. if the king still stands on the board
-                if not np.any(self.chess_board.cube == (King.id * enemy_colour)):
+                if ChessBoard.is_king_checkmate(self.chess_board.cube, enemy_colour):
                     self.is_checked[player_num] = False
                     self.is_checked[enemy_player_num] = False
                     self.is_checkmate[enemy_player_num] = True
@@ -148,28 +148,12 @@ class ChessGame():
 
         # Determine whether we (still) have a check situation
         if not message: # The game has not yet ended
-            this_p_captures = this_p_moves[1]
-            next_p_king_pos = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * enemy_colour)))
-            next_p_checked = False
-            for this_p_from_idcoord in this_p_captures:
-                if next_p_king_pos in [ x[1] for x in this_p_captures[this_p_from_idcoord] ]:
-                    next_p_checked = True
-                    break
-            self.is_checked[enemy_player_num] = next_p_checked
-
-            next_p_captures = next_p_moves[1]
-            this_p_king_pos = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(self.chess_board.cube==(King.id * colour)))
-            this_p_checked = False
-            for next_p_from_idcoord in next_p_captures:
-                if this_p_king_pos in [ x[1] for x in next_p_captures[next_p_from_idcoord] ]:
-                    this_p_checked = True
-                    break
-            self.is_checked[player_num] = this_p_checked
-            
+            self.is_checked[enemy_player_num] = ChessBoard.is_king_under_check(self.chess_board.cube, colour)
+            self.is_checked[enemy_player_num] = ChessBoard.is_king_under_check(self.chess_board.cube, enemy_colour)
 
         # Check if the enemy player is able to do any moves on their next turn
         if not message: # The game has not yet ended
-            if not next_p_moves[0] and not next_p_moves[1]:
+            if next_p_moves[0].shape[0] == 0 and next_p_moves[1].shape[0] == 0:
                 if self.is_checked[enemy_player_num]:
                     self.is_checked[enemy_player_num] = False
                     self.is_checkmate[enemy_player_num] = True
@@ -186,8 +170,8 @@ class ChessGame():
         # Record the move in the move history
         self._record_move(action, (from_figure, from_colour), (to_figure, to_colour))
 
-        # render_board_ascii(self.chess_board.cube)
-        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
+        render_board_ascii(self.chess_board.cube)
+        print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
 
         if message:
             return message
@@ -197,6 +181,7 @@ class ChessGame():
         player.receive_reward(0, self.move_history)
 
 
+    # TODO rewrite to take a single move ndarray as input
     def _record_move(self, action, from_figure_id, to_figure_id):
         from_figure, from_colour = from_figure_id
         to_figure, to_colour = to_figure_id
@@ -208,9 +193,9 @@ class ChessGame():
         if all(self.is_checked):
             s += "++"
         elif self.is_checked[0]:
-            s += "+"
+            s += "+w"
         elif self.is_checked[1]:
-            s += "+"
+            s += "+b"
         elif all(self.is_checkmate):
             s += " ½-½"
         elif any(self.is_checkmate):
@@ -221,6 +206,7 @@ class ChessGame():
                 s += " 1-0"
         self.move_history.append(s)
 
+    # TODO rewrite to return a single move ndarray
     @staticmethod
     def read_recorded_move(record):
         from_figure, from_colour = FIGURE_NAME_MAP[record[0]] 

@@ -68,8 +68,8 @@ class ChessBoard:
         fig_id = figure.id * colour
         plane, file, rank = figure_pos
 
-        passives = set()
-        captures = set()
+        passives = []
+        captures = []
 
 
         #iterate over passive moves
@@ -77,7 +77,7 @@ class ChessBoard:
             x = 1
             pv, fv, rv, next_x = passive(x, colour)
             while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv) and board_a[plane+pv, file+fv, rank+rv] == 0:
-                passives.add((fig_id, (plane+pv, file+fv, rank+rv)))
+                passives.append((fig_id, fig_id, plane, file, rank, plane+pv, file+fv, rank+rv))
                 if not next_x:
                     break
                 x = next_x
@@ -90,7 +90,7 @@ class ChessBoard:
             while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv):
                 if board_a[plane+pv, file+fv, rank+rv] != 0:
                     if FIGURE_ID_MAP[board_a[plane+pv, file+fv, rank+rv]][1] == -colour:
-                        captures.add((fig_id, (plane+pv, file+fv, rank+rv)))
+                        captures.append((fig_id, fig_id, plane, file, rank, plane+pv, file+fv, rank+rv))
                         break
                 if not next_x:
                     break
@@ -103,10 +103,10 @@ class ChessBoard:
             pv, fv, rv, next_x = move(x, colour)
             while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv):
                 if board_a[plane+pv, file+fv, rank+rv] == 0:
-                    passives.add((fig_id, (plane+pv, file+fv, rank+rv)))
+                    passives.append((fig_id, fig_id, plane, file, rank, plane+pv, file+fv, rank+rv))
                 else:
                     if FIGURE_ID_MAP[board_a[plane+pv, file+fv, rank+rv]][1] == -colour:
-                        captures.add((fig_id, (plane+pv, file+fv, rank+rv)))
+                        captures.append((fig_id, fig_id, plane, file, rank, plane+pv, file+fv, rank+rv))
                     break
                 if not next_x:
                     break
@@ -119,23 +119,23 @@ class ChessBoard:
             promotion_file  = board_a.shape[1]-1 if colour == Colour.WHITE else 0
 
             moves = [passives, captures]
-            pawn_moves = [set(), set()]
+            pawn_moves = [[], []]
 
             for i in range(len(pawn_moves)):
                 for move in moves[i]:
-                    f_id, (p, f, r) = move
-                    if p == promotion_plane and f == promotion_file: # If this move promotes the pawn, create a move for every figure that the pawn can promote to
+                    fig_id, _, p_0, f_0, r_0, p_1, f_1, r_1 = move
+                    if p_1 == promotion_plane and f_1 == promotion_file: # If this move promotes the pawn, create a move for every figure that the pawn can promote to
                         for fig in PROMOTABLE_FIGURES:
-                            pawn_moves[i].add((fig.id*colour, (p, f, r)))
+                            pawn_moves[i].append((fig_id, fig.id*colour, p_0, f_0, r_0, p_1, f_1, r_1))
                     else:
-                        pawn_moves[i].add((f_id, (p, f, r)))
+                        pawn_moves[i].append((fig_id, fig_id, p_0, f_0, r_0, p_1, f_1, r_1))
             
-            return (pawn_moves[0], pawn_moves[1])
+            return (np.array(pawn_moves[0]), np.array(pawn_moves[1]))
         else:
-            return (passives, captures)
+            return (np.array(passives), np.array(captures))
 
     @staticmethod
-    def get_passives_captures(board_a, colour=None):
+    def get_passives_captures(board_a, colour=None, simulate_safe_moves=True):
         white_positions = np.asarray((board_a > 0).nonzero()).T
         black_positions = np.asarray((board_a < 0).nonzero()).T
 
@@ -148,40 +148,53 @@ class ChessBoard:
         board_positions = [white_positions, black_positions]
         colours = [Colour.WHITE, Colour.BLACK]
 
-        passives = [{}, {}]
-        captures = [{}, {}]
+        passives = [[], []]
+        captures = [[], []]
 
         # Generate passives and captures for both colours
-        for i in range(2):
-            ally_passives = passives[i]
-            ally_captures = captures[i]
+        for i in range(len(passives)):
             for piece_pos in [ (p[0], p[1], p[2]) for p in board_positions[i] ]:
                 piece_passives, piece_captures = ChessBoard._generate_figure_passives_captures(board_a, piece_pos)
-                if piece_passives:
-                    ally_passives[(board_a[piece_pos], piece_pos)] = piece_passives
-                if piece_captures:
-                    ally_captures[(board_a[piece_pos], piece_pos)] = piece_captures
+                if piece_passives.shape[0] > 0:
+                    passives[i].append(piece_passives)
+                if piece_captures.shape[0] > 0:
+                    captures[i].append(piece_captures)
+
+        for i in range(len(passives)):
+            passives[i] = np.concatenate(passives[i], axis=0)
+            captures[i] = np.concatenate(captures[i], axis=0)
 
         safe_passives = [{}, {}]
         safe_captures = [{}, {}]
 
-        # safe_passives = passives
-        # safe_captures = captures
-
         # # Simulate each possible move and delete those that directly put the ally king in check (since those are illegal moves)
-        if colour == None or colour == Colour.WHITE:
-            for from_tuple in passives[0]:
-                safe_passives[0][from_tuple] = ChessBoard.simulate_is_safe_moves(board_a, from_tuple, passives[0][from_tuple], colours[0], white_king_position, black_king_position)
-            for from_tuple in captures[0]:
-                safe_captures[0][from_tuple] = ChessBoard.simulate_is_safe_moves(board_a, from_tuple, captures[0][from_tuple], colours[0], white_king_position, black_king_position)
+        if simulate_safe_moves:
+            pass
+            # if colour == None or colour == Colour.WHITE:
+            #     for from_tuple in passives[0]:
+            #         safe_passives[0][from_tuple] = ChessBoard.simulate_safe_moves(board_a, from_tuple, passives[0][from_tuple], colours[0], white_king_position, black_king_position)
+            #     for from_tuple in captures[0]:
+            #         safe_captures[0][from_tuple] = ChessBoard.simulate_safe_moves(board_a, from_tuple, captures[0][from_tuple], colours[0], white_king_position, black_king_position)
 
-        if colour == None or colour == Colour.BLACK:
-            for from_tuple in passives[1]:
-                safe_passives[1][from_tuple] = ChessBoard.simulate_is_safe_moves(board_a, from_tuple, passives[1][from_tuple], colours[1], black_king_position, white_king_position)
-            for from_tuple in captures[1]:
-                safe_captures[1][from_tuple] = ChessBoard.simulate_is_safe_moves(board_a, from_tuple, captures[1][from_tuple], colours[1], black_king_position, white_king_position)
+            # if colour == None or colour == Colour.BLACK:
+            #     for from_tuple in passives[1]:
+            #         safe_passives[1][from_tuple] = ChessBoard.simulate_safe_moves(board_a, from_tuple, passives[1][from_tuple], colours[1], black_king_position, white_king_position)
+            #     for from_tuple in captures[1]:
+            #         safe_captures[1][from_tuple] = ChessBoard.simulate_safe_moves(board_a, from_tuple, captures[1][from_tuple], colours[1], black_king_position, white_king_position)
+        else:
+            safe_passives = passives
+            safe_captures = captures
 
+        print(passives)
+        print()
+        print(captures)
 
+        print()
+        print()
+
+        print(safe_passives)
+        print()
+        print(safe_captures)
 
         # for col_i in (range(2) if colour == None else range(0, 1) if colour == Colour.WHITE else range(1, 2)):
         #     ally_king_pos = ally_king_position[i]
@@ -290,10 +303,10 @@ class ChessBoard:
         #     safe_captures[1][(cb_from_piece_id, cb_from_pos)] = safe_b_captures
 
         # Revert all sets back to lists
-        white_passives = {key: [*value] for (key, value) in safe_passives[0].items() if value}
-        white_captures = {key: [*value] for (key, value) in safe_captures[0].items() if value}
-        black_passives = {key: [*value] for (key, value) in safe_passives[1].items() if value}
-        black_captures = {key: [*value] for (key, value) in safe_captures[1].items() if value}
+        white_passives = passives[0]
+        white_captures = captures[0]
+        black_passives = passives[1]
+        black_captures = captures[1]
 
         
         # Return the appropriate tuple in regard to colour
@@ -305,9 +318,8 @@ class ChessBoard:
         else:
             return ((white_passives, white_captures), (black_passives, black_captures))
 
-    
     @staticmethod
-    def simulate_is_safe_moves(board_a, from_tuple, to_moves, colour, ally_king_pos=None, enemy_king_pos=None):
+    def simulate_safe_moves(board_a, from_tuple, to_moves, colour, ally_king_pos=None, enemy_king_pos=None):
         if ally_king_pos == None or enemy_king_pos == None:
             white_king_position = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(board_a==(King.id * Colour.WHITE)))
             black_king_position = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(board_a==(King.id * Colour.BLACK)))
@@ -331,61 +343,64 @@ class ChessBoard:
         else:
             sim_board_a = board_a.copy()
             ChessBoard.move(sim_board_a, from_tuple, to_tuple)
-            enemy_colour = colour*-1
+            enemy_colour = Colour.BLACK if colour == Colour.WHITE else Colour.WHITE
             sim_ally_king_pos = to_coords if from_id == King.id*colour else ally_king_pos
-            enemy_figures = [ FIGURE_ID_MAP[id][0] for id in np.unique(sim_board_a[sim_board_a < 0 if colour == Colour.WHITE else sim_board_a < 0])] # Get all unique enemy figures
-            for figure in enemy_figures:
-                enemy_figure_passives, enemy_figure_captures = ChessBoard._emulate_figure_passives_captures(sim_board_a, sim_ally_king_pos, figure)
-                for capture in enemy_figure_captures:
-                    if sim_board_a[capture] == figure.id*enemy_colour:
-                        return False
+
+            enemy_figures = [ FIGURE_ID_MAP[id][0] for id in np.unique(sim_board_a[sim_board_a < 0 if colour == Colour.WHITE else sim_board_a > 0])] # Get all unique enemy figures
+            for enemy_figure in enemy_figures:
+                if ChessBoard._can_capture_target_emulate(sim_board_a, sim_ally_king_pos, enemy_figure, colour, enemy_figure, enemy_colour):
+                    return False
             return True
 
     @staticmethod
-    def _emulate_figure_passives_captures(board_a, figure_pos, figure):
-        orig_figure, colour = FIGURE_ID_MAP[board_a[figure_pos]]
-        plane, file, rank = figure_pos
-        passives = set()
-        captures = set()
-        #iterate over passive moves
-        for passive in figure.passives:
-            x = 1
-            pv, fv, rv, next_x = passive(x, colour)
-            while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv) and board_a[plane+pv, file+fv, rank+rv] == 0:
-                passives.add((plane+pv, file+fv, rank+rv))
-                if not next_x:
-                    break
-                x = next_x
-                pv, fv, rv, next_x = passive(x, colour)
-        # iterate over capture moves
-        for capture in figure.captures:
-            x = 1
-            pv, fv, rv, next_x = capture(x, colour)
-            while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv):
-                if board_a[plane+pv, file+fv, rank+rv] != 0:
-                    if FIGURE_ID_MAP[board_a[plane+pv, file+fv, rank+rv]][1] == -colour:
-                        captures.add((plane+pv, file+fv, rank+rv))
-                        break
-                if not next_x:
-                    break
-                x = next_x
-                pv, fv, rv, next_x = capture(x, colour)
-        # iterate over passive or capture moves
-        for move in figure.passive_or_capture:
-            x = 1
-            pv, fv, rv, next_x = move(x, colour)
-            while ChessBoard.in_bounds(board_a.shape[0]-1, plane+pv, file+fv, rank+rv):
-                if board_a[plane+pv, file+fv, rank+rv] == 0:
-                    passives.add((plane+pv, file+fv, rank+rv))
-                else:
-                    if FIGURE_ID_MAP[board_a[plane+pv, file+fv, rank+rv]][1] == -colour:
-                        captures.add((plane+pv, file+fv, rank+rv))
-                    break
-                if not next_x:
-                    break
-                x = next_x
-                pv, fv, rv, next_x = move(x, colour)
-        return (passives, captures)
+    def is_king_under_check(board_a, colour, king_coords=None):
+        if king_coords == None:
+            king_coords = (lambda x: (x[0][0], x[1][0], x[2][0])) (np.where(board_a==(King.id * colour)))
+        plane, file, rank = king_coords
+        enemy_figures_bool_a = board_a < 0 if colour == Colour.WHITE else board_a > 0
+        enemy_figures = [ FIGURE_ID_MAP[id][0] for id in np.unique(board_a[enemy_figures_bool_a])] # Get all unique enemy figures
+        for enemy_figure in enemy_figures:
+            enemy_figure_id = enemy_figure.id*-1*colour
+            for move_set in [enemy_figure.captures, enemy_figure.passive_or_capture]:
+                for move in move_set:
+                    x = 1
+                    pv, fv, rv, next_x = move(x, colour)
+                    abs_p, abs_f, abs_r = plane+pv, file+fv, rank+rv
+                    while ChessBoard.in_bounds(board_a.shape[0]-1, abs_p, abs_f, abs_r):
+                        if board_a[abs_p, abs_f, abs_r] == enemy_figure_id:
+                            return True
+                        if not next_x:
+                            break
+                        x = next_x
+                        pv, fv, rv, next_x = move(x, colour)
+                        abs_p, abs_f, abs_r = plane+pv, file+fv, rank+rv
+
+    @staticmethod
+    def is_king_checkmate(board_a, colour):
+        return (King.id*colour) in board_a
+
+
+    # @staticmethod
+    # def _can_capture_target_emulate(board_a, orig_figure_pos, emu_figure, emu_colour, target_figure, target_colour):
+    #     plane, file, rank = orig_figure_pos
+    #     target_figure_id = target_figure.id*target_colour
+
+    #     move_sets = [emu_figure.captures, emu_figure.passive_or_capture]
+    #     for move_set in move_sets:
+    #         for move in move_set:
+    #             x = 1
+    #             pv, fv, rv, next_x = move(x, emu_colour)
+    #             abs_p, abs_f, abs_r = plane+pv, file+fv, rank+rv
+    #             while ChessBoard.in_bounds(board_a.shape[0]-1, abs_p, abs_f, abs_r):
+    #                 if board_a[abs_p, abs_f, abs_r] == target_figure_id:
+    #                     return True
+    #                 if not next_x:
+    #                     break
+    #                 x = next_x
+    #                 pv, fv, rv, next_x = move(x, emu_colour)
+    #                 abs_p, abs_f, abs_r = plane+pv, file+fv, rank+rv
+
+    #     return False
         
 
     @staticmethod

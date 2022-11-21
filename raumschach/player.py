@@ -52,18 +52,14 @@ class RandomPlayer(Player):
     def send_action(self, observation):
         pieces = [*set([*observation.passives] + [*observation.captures])]
         from_pos = pieces[self.rng.integers(0, len(pieces))]
-        # from_pos = pieces[random.randint(0, len(pieces)-1)] # random.choice([*set([*observation.passives] + [*observation.captures])])
         moves = observation.passives[from_pos] if from_pos in observation.passives else []
         captures = observation.captures[from_pos] if from_pos in observation.captures else []
         while not [*set(moves + captures)]:
             from_pos = pieces[self.rng.integers(0, len(pieces))]
-            # from_pos = random.choice([*set([*observation.passives] + [*observation.captures])])
             moves = observation.passives[from_pos] if from_pos in observation.passives else []
             captures = observation.captures[from_pos] if from_pos in observation.captures else []
         moves_captures = [*set(moves + captures)]
         to_pos = moves_captures[self.rng.integers(0, len(moves_captures))]
-        # to_pos = moves_captures[random.randint(0, len(moves_captures)-1)] # random.choice([*set(moves + captures)]) - but choice somehow breaks after some time
-        # render_board_ascii(observation.cb)
         return (from_pos, to_pos)
 
     def receive_reward(self, reward_value, move_history):
@@ -72,10 +68,11 @@ class RandomPlayer(Player):
 
 
 class MiniMaxPlayer(Player):
-    def __init__(self, search_depth=1, discount_factor=1, rand_seed=None):
+    def __init__(self, search_depth=1, rand_seed=None):
         super().__init__()
         self.search_depth = search_depth
-        self.gamma = discount_factor
+        self.inf = np.inf
+        self.neg_inf = -1*np.inf
 
         if rand_seed == None:
             rand_seed = np.random.default_rng().integers(-(2**63), high=(2**63 - 1))
@@ -101,47 +98,160 @@ class MiniMaxPlayer(Player):
     def send_action(self, observation):
         board_a = observation.cb
         moves = self._passives_captures_dict_to_move_list(observation.passives, observation.captures)
+
+        return self._resursive_best_move_values(0, self.search_depth, board_a, observation.colour, moves=moves)[0]
+
         best_move_ix, best_move_value = self._resursive_best_move_values(1, self.search_depth, moves, board_a, observation.colour, observation.colour)
         # print()
         return moves[best_move_ix]
 
-    def _resursive_best_move_values(self, depth, max_depth, moves, board_a, player_colour, current_colour):
-        len_moves = len(moves)
-        move_values = np.full(len_moves, -1*np.inf, dtype=np.float32)
-        for i in range(len_moves):
-            from_move, to_move = moves[i]
-            sim_board_a = np.array(board_a)
-            ChessBoard.move(sim_board_a, from_move, to_move)
-            best_sim_move_ix, best_sim_value = None, None
-            if depth+1 > max_depth:
-                best_sim_move_ix, best_sim_value = 0, 0
-            elif King.id*player_colour not in sim_board_a: # The enemy player has won
-                best_sim_move_ix, best_sim_value =  np.inf*-1, np.inf*-1
-            elif King.id*-1*player_colour not in sim_board_a: # This player has won
-                best_sim_move_ix, best_sim_value =  np.inf, np.inf
-            else:
-                sim_passives, sim_captures = ChessBoard.get_passives_captures(sim_board_a, current_colour)
-                sim_moves = self._passives_captures_dict_to_move_list(sim_passives, sim_captures)
-                best_sim_move_ix, best_sim_value = self._resursive_best_move_values(depth+1, max_depth, sim_moves, sim_board_a, player_colour, current_colour*-1)
-
-            sim_board_a = sim_board_a if player_colour == Colour.WHITE else sim_board_a*-1
-            sim_value_board = self.vectorized_value_transform(sim_board_a)
-            if np.inf in sim_value_board and -1*np.inf in sim_value_board:
-                sim_value_board[sim_value_board == np.inf] = 0
-                sim_value_board[sim_value_board == -1*np.inf] = 0
-            sim_board_value = np.sum(sim_value_board)
-            move_values[i] = sim_board_value + best_sim_value*np.power(self.gamma, depth) # Value of current board state plus discounted best possible values of future moves (assuming enemy has the same policy)
-            # if depth == 1:
-            #     print("\r", move_values, end='')
-        
-        best_move_ix = None
-        if current_colour == player_colour:
+    def _get_best_move(self, max_depth, moves, board_a, player_colour):
+        best_move_value = self._resursive_best_move_values(0, max_depth, board_a, player_colour, moves=moves)
+        return best_move_value
+        if player_colour == Colour.WHITE:
             max_val_ixs = np.where(move_values == np.max(move_values))[0]
-            best_move_ix = max_val_ixs[self.rng.integers(0, max_val_ixs.shape[0])]
+            return move_values[max_val_ixs[self.rng.integers(0, max_val_ixs.shape[0])]]
         else:
             min_val_ixs = np.where(move_values == np.min(move_values))[0]
-            best_move_ix = min_val_ixs[self.rng.integers(0, min_val_ixs.shape[0])]
-        return (best_move_ix, move_values[best_move_ix])
+            return move_values[min_val_ixs[self.rng.integers(0, min_val_ixs.shape[0])]]
+
+
+    def _resursive_best_move_values(self, depth, max_depth, board_a, current_colour, moves=None):
+        if King.id*Colour.WHITE not in board_a: # Black has won - terminal condition
+            return (None, self.neg_inf)
+        if King.id*Colour.BLACK not in board_a: # White has won - terminal condition
+            return (None, self.inf)
+        if depth == max_depth: # End of search tree - terminal condition
+            value_board = self.vectorized_value_transform(board_a)
+            value_board[np.isinf(value_board)] = 0
+            return (None, np.sum(value_board))
+
+        if None == moves:
+            passives, captures = ChessBoard.get_passives_captures(board_a, current_colour)
+            moves = self._passives_captures_dict_to_move_list(passives, captures)
+
+        len_moves = len(moves)
+
+        if len_moves == 0: # No moves to compute - terminal conditions
+            return (None, 0) # TODO: What should be the right board value for this?
+
+        # recursive case
+        best_move = None
+        comp_func = None
+        best_move_value = None
+        if current_colour == Colour.WHITE:
+            comp_func = max
+            best_move_value = self.neg_inf
+        else:
+            comp_func = min
+            best_move_value = self.inf
+
+        for move in moves:
+            from_move, to_move = move
+            sim_board_a = board_a.copy()
+            ChessBoard.move(sim_board_a, from_move, to_move)
+            sim_move_value = self._resursive_best_move_values(depth+1, max_depth, sim_board_a, current_colour*-1)[1]
+            if best_move_value != comp_func(best_move_value, sim_move_value):
+                best_move_value = sim_move_value
+                best_move = move
+            # best_move_value = comp_func(best_move_value, sim_move_value)
+            if current_colour == Colour.WHITE:
+                if best_move_value == self.inf: # We have achieved the highest possible value - no need to look further
+                    break
+            else:
+                if best_move_value == self.neg_inf: # We have achieved the lowest possible value - no need to look further
+                    break
+
+        return (best_move, best_move_value)
+
+
+        # len_moves = len(moves)
+        # if len_moves == 0:
+        #     return (-1, 0)
+        # move_values = None
+        # if depth+1 > max_depth: # terminal condition so no recursion
+        #     move_values = np.full(len_moves, 0, dtype=np.float32)
+        # else:
+        #     move_values = np.full(len_moves, self.neg_inf, dtype=np.float32)
+        #     move_ix = 0
+        #     for move in moves:
+        #         from_move, to_move = move
+        #         sim_board_a = board_a.copy()
+        #         ChessBoard.move(sim_board_a, from_move, to_move)
+        #         best_sim_value = None
+        #         if King.id*Colour.WHITE not in sim_board_a: # Black has won - terminal condition so no recursion
+        #             move_values[move_ix] = self.neg_inf
+        #         elif King.id*Colour.BLACK not in sim_board_a: # White has won - terminal condition so no recursion
+        #             move_values[move_ix] = inf
+        #         else:
+        #             sim_passives, sim_captures = ChessBoard.get_passives_captures(sim_board_a, colour=current_colour)
+        #             sim_moves = self._passives_captures_dict_to_move_list(sim_passives, sim_captures)
+        #             best_sim_value = self._resursive_best_move_values(depth+1, max_depth, sim_moves, sim_board_a, player_colour, current_colour*-1)[1]
+        #             sim_value_board = self.vectorized_value_transform(sim_board_a)
+        #             sim_value_board[np.isinf(sim_value_board)] = 0 # Get rid of infinite king values since they wouldn't cancel out
+        #             sim_board_value = np.sum(sim_value_board)
+        #             move_values[move_ix] = sim_board_value + np.power(self.gamma, depth) * best_sim_value
+        #         move_ix += 1
+        
+        # best_move_ix = None
+        # # print(depth, max_depth)
+        # # print(moves)
+        # # print(move_values)
+        # if current_colour == Colour.WHITE:
+        #     max_val_ixs = np.where(move_values == np.max(move_values))[0]
+        #     best_move_ix = max_val_ixs[self.rng.integers(0, max_val_ixs.shape[0])]
+        # else:
+        #     min_val_ixs = np.where(move_values == np.min(move_values))[0]
+        #     best_move_ix = min_val_ixs[self.rng.integers(0, min_val_ixs.shape[0])]
+        # return (best_move_ix, move_values[best_move_ix])
+
+
+
+        # len_moves = len(moves)
+        # move_values = np.full(len_moves, -1*np.inf, dtype=np.float32)
+        # for i in range(len_moves):
+        #     from_move, to_move = moves[i]
+        #     sim_board_a = np.array(board_a)
+        #     ChessBoard.move(sim_board_a, from_move, to_move)
+        #     best_sim_move_ix, best_sim_value = None, None
+        #     if depth+1 > max_depth:
+        #         best_sim_move_ix, best_sim_value = 0, 0
+        #     elif King.id*player_colour not in sim_board_a: # The enemy player has won
+        #         best_sim_move_ix, best_sim_value =  np.inf*-1, np.inf*-1
+        #     elif King.id*-1*player_colour not in sim_board_a: # This player has won
+        #         best_sim_move_ix, best_sim_value =  np.inf, np.inf
+        #     else:
+        #         sim_passives, sim_captures = ChessBoard.get_passives_captures(sim_board_a, current_colour)
+        #         sim_moves = self._passives_captures_dict_to_move_list(sim_passives, sim_captures)
+        #         best_sim_move_ix, best_sim_value = self._resursive_best_move_values(depth+1, max_depth, sim_moves, sim_board_a, player_colour, current_colour*-1)
+
+        #     sim_board_a = sim_board_a if player_colour == Colour.WHITE else sim_board_a*-1
+        #     sim_value_board = self.vectorized_value_transform(sim_board_a)
+        #     if np.inf in sim_value_board and -1*np.inf in sim_value_board:
+        #         sim_value_board[sim_value_board == np.inf] = 0
+        #         sim_value_board[sim_value_board == -1*np.inf] = 0
+        #     sim_board_value = np.sum(sim_value_board)
+        #     move_values[i] = sim_board_value + best_sim_value*np.power(self.gamma, depth) # Value of current board state plus discounted best possible values of future moves (assuming enemy has the same policy)
+        #     # if depth == 1:
+        #     #     print("\r", move_values, end='')
+        
+        # best_move_ix = None
+        # if current_colour == player_colour:
+        #     max_val_ixs = np.where(move_values == np.max(move_values))[0]
+        #     best_move_ix = max_val_ixs[self.rng.integers(0, max_val_ixs.shape[0])]
+        # else:
+        #     min_val_ixs = np.where(move_values == np.min(move_values))[0]
+        #     best_move_ix = min_val_ixs[self.rng.integers(0, min_val_ixs.shape[0])]
+        # return (best_move_ix, move_values[best_move_ix])
+
+
+
+
+
+
+
+
+
 
         #     sim_board_a = sim_board_a if current_colour == Colour.WHITE else sim_board_a*-1
         #     sim_value_board = self.vectorized_value_transform(sim_board_a)
@@ -164,7 +274,7 @@ class MiniMaxPlayer(Player):
 
 
 
-# TODO Refactor random player to fit new moves style
+# TODO Refactor console player to fit new moves style
 class ConsolePlayer(Player):
     def __init__(self):
         super().__init__()
@@ -195,7 +305,7 @@ class ConsolePlayer(Player):
                 coord2 = ChessBoard.get_pos_coord(pos2)
                 if observation.cb[coord1] == 0:
                     print("Invalid input - You can only move your own chess pieces")
-                elif (coord1 not in observation.passives) and (coord1 not in observation.captures):
+                elif (coord1 not in [ x[1] for x in observation.passives ]) and (coord1 not in [ x[1] for x in observation.captures ]):
                     print("Invalid input - You cannot move the piece at the specified position")
                     print("input a single board position (e.g. Aa1) to display the moves of that chess piece")
                 elif (coord2 not in observation.passives.get(coord1, [])) and (coord2 not in observation.captures.get(coord1, [])):
