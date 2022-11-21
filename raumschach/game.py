@@ -2,6 +2,7 @@ import numpy as np
 
 from raumschach.board import INITIAL_5_5_BOARD_SETUP, BoardState, ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, Colour, King, Pawn
+from raumschach.player import Player
 from raumschach.render import render_board_ascii
 
 class IllegalActionException(Exception):
@@ -14,7 +15,7 @@ SIZE_TO_SETUP_MAP = {
 
 class ChessGame():
 
-    def __init__(self, player1, player2, board_size):
+    def __init__(self, player1: Player, player2: Player, board_size):
         setup = SIZE_TO_SETUP_MAP[board_size] if board_size in SIZE_TO_SETUP_MAP else []
         self.chess_board = ChessBoard(board_size, setup)
         self.players = [(player1, Colour.WHITE), (player2, Colour.BLACK)]
@@ -69,31 +70,22 @@ class ChessGame():
         hash_val = self.chess_board.cube.data.tobytes()
         state_repetition = self.state_repetition_map[hash_val] if hash_val in self.state_repetition_map else 0
         action = player.send_action(player.receive_observation(BoardState(self.chess_board.cube, colour, passives, captures, self.no_progress, state_repetition)))
-        
-        from_action, to_action = action
-        (from_piece, from_coord), (to_piece, to_coord) = action
 
         # TODO Negative reward for doing illegal move
         # check if the action is legal
-        if (from_action not in passives) and (from_action not in captures):
-            raise IllegalActionException("This piece does not exist")
-        elif (from_action not in passives or (from_action in passives and to_action not in passives[from_action])):
-            if (from_action not in captures or (from_action in captures and to_action not in captures[from_action])):
-                raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
-
+        if (action not in passives) and (action not in captures):
+            raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
         
 
         # Implement the action on the chess board
-        from_figure, from_colour = FIGURE_ID_MAP[self.chess_board[from_coord]] # Get the figure standing at the from position
-        to_figure, to_colour = FIGURE_ID_MAP[self.chess_board[to_coord]] if self.chess_board[to_coord] != 0 else (None, None) # Get the figure standing at the to position
-        ChessBoard.move(self.chess_board.cube, from_action, to_action)
+        ChessBoard.move(self.chess_board.cube, action)
 
         # Update the no progress rule
         if not message: # The game has not yet ended
             self.no_progress += 1
-            if from_figure == Pawn:
+            if FIGURE_ID_MAP[action[0]][0] == Pawn:
                 self.no_progress = 0
-            elif from_action in captures and to_action in captures[from_action]:
+            elif action in captures:
                 self.no_progress = 0
             elif self.no_progress > 50:
                 self.is_checked[player_num] = False
@@ -168,7 +160,7 @@ class ChessGame():
                     message = f"({Colour.string(enemy_colour)}) is not checked and does not have any available moves - automatic stalemate"
 
         # Record the move in the move history
-        self._record_move(action, (from_figure, from_colour), (to_figure, to_colour))
+        self.move_history.append(ChessBoard.record_move(self.chess_board.cube, action, self.is_checked, self.is_checkmate))
 
         render_board_ascii(self.chess_board.cube)
         print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
@@ -179,44 +171,3 @@ class ChessGame():
 
         # Reward of moves generally is 0 - Reward of win is +1 - Reward of loss is -1 - Reward of draw is 0
         player.receive_reward(0, self.move_history)
-
-
-    # TODO rewrite to take a single move ndarray as input
-    def _record_move(self, action, from_figure_id, to_figure_id):
-        from_figure, from_colour = from_figure_id
-        to_figure, to_colour = to_figure_id
-        (from_piece, from_coord), (to_piece, to_coord) = action
-        move_sign = "-" if to_figure == None else "x"
-        s = f"{(from_figure.name[1+from_colour])}:{ChessBoard.get_pos_code(from_coord)}{move_sign}{ChessBoard.get_pos_code(to_coord)}"
-        if from_piece != to_piece:
-            s += f"={FIGURE_ID_MAP[to_piece][0].name[1+from_colour]}"
-        if all(self.is_checked):
-            s += "++"
-        elif self.is_checked[0]:
-            s += "+w"
-        elif self.is_checked[1]:
-            s += "+b"
-        elif all(self.is_checkmate):
-            s += " ½-½"
-        elif any(self.is_checkmate):
-            s += "#"
-            if self.is_checkmate[0]:
-                s += " 0-1"
-            else:
-                s += " 1-0"
-        self.move_history.append(s)
-
-    # TODO rewrite to return a single move ndarray
-    @staticmethod
-    def read_recorded_move(record):
-        from_figure, from_colour = FIGURE_NAME_MAP[record[0]] 
-        from_pos = record[2:5]
-        to_pos = record[6:9]
-        to_figure, to_colour = from_figure, from_colour
-        if '=' in record:
-            to_figure, to_colour = FIGURE_NAME_MAP[record[10]]
-        from_coord = ChessBoard.get_pos_coord(from_pos)
-        to_coord = ChessBoard.get_pos_coord(to_pos)
-        from_tuple = (from_figure.id* from_colour, from_coord)
-        to_tuple   = (to_figure.id  * to_colour,   to_coord)
-        return (from_tuple, to_tuple)

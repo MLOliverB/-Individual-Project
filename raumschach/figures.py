@@ -18,22 +18,22 @@ class Figure(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def id(self):
+    def id(self) -> int:
         pass
 
     @property
     @abstractmethod
-    def name(self):
+    def name(self) -> str:
         pass
 
     @property
     @abstractmethod
-    def value(self):
+    def value(self) -> int:
         pass
 
     @property
     @abstractmethod
-    def can_jump(self):
+    def can_jump(self) -> bool:
         pass
 
     @property

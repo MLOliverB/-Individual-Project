@@ -2,7 +2,6 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 from raumschach.board import ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, Colour, King
-from raumschach.game import ChessGame
 from raumschach.render import render_board_ascii, render_figure_moves_ascii
 
 
@@ -32,7 +31,7 @@ class DummyPlayer(Player):
 
     def send_action(self, observation):
         render_board_ascii(observation.cb)
-        return ChessGame.read_recorded_move(self.script.pop(0))
+        return ChessBoard.read_recorded_move(self.script.pop(0))
 
     def receive_reward(self, reward_value, move_history):
         return super().receive_reward(reward_value, move_history)
@@ -50,17 +49,13 @@ class RandomPlayer(Player):
         return board_state
 
     def send_action(self, observation):
-        pieces = [*set([*observation.passives] + [*observation.captures])]
-        from_pos = pieces[self.rng.integers(0, len(pieces))]
-        moves = observation.passives[from_pos] if from_pos in observation.passives else []
-        captures = observation.captures[from_pos] if from_pos in observation.captures else []
-        while not [*set(moves + captures)]:
-            from_pos = pieces[self.rng.integers(0, len(pieces))]
-            moves = observation.passives[from_pos] if from_pos in observation.passives else []
-            captures = observation.captures[from_pos] if from_pos in observation.captures else []
-        moves_captures = [*set(moves + captures)]
-        to_pos = moves_captures[self.rng.integers(0, len(moves_captures))]
-        return (from_pos, to_pos)
+        len_passives = observation.passives.shape[0]
+        len_captures = observation.captures.shape[0]
+        rand_ix = self.rng.integers(0, len_passives+len_captures)
+        if rand_ix < len_passives:
+            return observation.passives[rand_ix]
+        else:
+            return observation.captures[len_passives - rand_ix]
 
     def receive_reward(self, reward_value, move_history):
         return super().receive_reward(reward_value, move_history)
