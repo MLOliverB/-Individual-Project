@@ -73,11 +73,14 @@ class ChessGame():
 
         # TODO Negative reward for doing illegal move
         # check if the action is legal
+        print(passives, action in passives)
+        print(captures, action in captures)
         if (action not in passives) and (action not in captures):
             raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
         
 
         # Implement the action on the chess board
+        prev_board_a = self.chess_board.cube.copy()
         ChessBoard.move(self.chess_board.cube, action)
 
         # Update the no progress rule
@@ -140,7 +143,7 @@ class ChessGame():
 
         # Determine whether we (still) have a check situation
         if not message: # The game has not yet ended
-            self.is_checked[enemy_player_num] = ChessBoard.is_king_under_check(self.chess_board.cube, colour)
+            self.is_checked[player_num] = ChessBoard.is_king_under_check(self.chess_board.cube, colour)
             self.is_checked[enemy_player_num] = ChessBoard.is_king_under_check(self.chess_board.cube, enemy_colour)
 
         # Check if the enemy player is able to do any moves on their next turn
@@ -160,7 +163,7 @@ class ChessGame():
                     message = f"({Colour.string(enemy_colour)}) is not checked and does not have any available moves - automatic stalemate"
 
         # Record the move in the move history
-        self.move_history.append(ChessBoard.record_move(self.chess_board.cube, action, self.is_checked, self.is_checkmate))
+        self.move_history.append(ChessBoard.record_move(prev_board_a, self.chess_board.cube, action, self.is_checked, self.is_checkmate))
 
         render_board_ascii(self.chess_board.cube)
         print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))

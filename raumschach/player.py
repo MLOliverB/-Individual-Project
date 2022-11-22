@@ -91,27 +91,33 @@ class MiniMaxPlayer(Player):
         return moves
 
     def send_action(self, observation):
-        board_a = observation.cb
-        moves = self._passives_captures_dict_to_move_list(observation.passives, observation.captures)
+        render_board_ascii(observation.cb)
+        best_move, best_value = self._recursive_best_move_value(0, self.search_depth, observation.cb, observation.passives, observation.captures, observation.colour)
+        print(observation.passives)
+        print(observation.captures)
+        print(best_move)
+        print(best_value)
+        # board_a = observation.cb
+        # moves = self._passives_captures_dict_to_move_list(observation.passives, observation.captures)
 
-        return self._resursive_best_move_values(0, self.search_depth, board_a, observation.colour, moves=moves)[0]
+        # return self._resursive_best_move_values(0, self.search_depth, board_a, observation.colour, moves=moves)[0]
 
-        best_move_ix, best_move_value = self._resursive_best_move_values(1, self.search_depth, moves, board_a, observation.colour, observation.colour)
-        # print()
-        return moves[best_move_ix]
+        # best_move_ix, best_move_value = self._resursive_best_move_values(1, self.search_depth, moves, board_a, observation.colour, observation.colour)
+        # # print()
+        # return moves[best_move_ix]
 
-    def _get_best_move(self, max_depth, moves, board_a, player_colour):
-        best_move_value = self._resursive_best_move_values(0, max_depth, board_a, player_colour, moves=moves)
-        return best_move_value
-        if player_colour == Colour.WHITE:
-            max_val_ixs = np.where(move_values == np.max(move_values))[0]
-            return move_values[max_val_ixs[self.rng.integers(0, max_val_ixs.shape[0])]]
-        else:
-            min_val_ixs = np.where(move_values == np.min(move_values))[0]
-            return move_values[min_val_ixs[self.rng.integers(0, min_val_ixs.shape[0])]]
+    # def _get_best_move(self, max_depth, moves, board_a, player_colour):
+    #     best_move, best_value = self._recursive_best_move_value(0, max_depth, board_a)
+        # best_move_value = self._resursive_best_move_values(0, max_depth, board_a, player_colour, moves=moves)
+        # return best_move_value
+        # if player_colour == Colour.WHITE:
+        #     max_val_ixs = np.where(move_values == np.max(move_values))[0]
+        #     return move_values[max_val_ixs[self.rng.integers(0, max_val_ixs.shape[0])]]
+        # else:
+        #     min_val_ixs = np.where(move_values == np.min(move_values))[0]
+        #     return move_values[min_val_ixs[self.rng.integers(0, min_val_ixs.shape[0])]]
 
-
-    def _resursive_best_move_values(self, depth, max_depth, board_a, current_colour, moves=None):
+    def _recursive_best_move_value(self, depth, max_depth, board_a: np.ndarray, unsafe_passives, unsafe_captures, current_colour):
         if King.id*Colour.WHITE not in board_a: # Black has won - terminal condition
             return (None, self.neg_inf)
         if King.id*Colour.BLACK not in board_a: # White has won - terminal condition
@@ -121,43 +127,84 @@ class MiniMaxPlayer(Player):
             value_board[np.isinf(value_board)] = 0
             return (None, np.sum(value_board))
 
-        if None == moves:
-            passives, captures = ChessBoard.get_passives_captures(board_a, current_colour)
-            moves = self._passives_captures_dict_to_move_list(passives, captures)
+        safe_passives_captures, next_unsafe_passives_captures_dicts = ChessBoard.get_safe_passives_captures_simulated(board_a, unsafe_passives, unsafe_captures, current_colour)
+        safe_passives, safe_captures = safe_passives_captures
+        next_unsafe_passives_dict, next_unsafe_captures_dict = next_unsafe_passives_captures_dicts
 
-        len_moves = len(moves)
-
-        if len_moves == 0: # No moves to compute - terminal conditions
+        if safe_passives.shape[0] + safe_captures.shape[0] == 0: # No moves to compute - terminal conditions
             return (None, 0) # TODO: What should be the right board value for this?
 
-        # recursive case
-        best_move = None
-        comp_func = None
-        best_move_value = None
-        if current_colour == Colour.WHITE:
-            comp_func = max
-            best_move_value = self.neg_inf
-        else:
-            comp_func = min
-            best_move_value = self.inf
+        #recursive case
+        moves = np.concatenate([safe_passives, safe_captures])
+        move_values = np.full(moves.shape[0], self.neg_inf if current_colour == Colour.WHITE else self.inf)
 
-        for move in moves:
-            from_move, to_move = move
+        for i in range(moves.shape[0]):
+            move = moves[i]
             sim_board_a = board_a.copy()
-            ChessBoard.move(sim_board_a, from_move, to_move)
-            sim_move_value = self._resursive_best_move_values(depth+1, max_depth, sim_board_a, current_colour*-1)[1]
-            if best_move_value != comp_func(best_move_value, sim_move_value):
-                best_move_value = sim_move_value
-                best_move = move
-            # best_move_value = comp_func(best_move_value, sim_move_value)
-            if current_colour == Colour.WHITE:
-                if best_move_value == self.inf: # We have achieved the highest possible value - no need to look further
-                    break
-            else:
-                if best_move_value == self.neg_inf: # We have achieved the lowest possible value - no need to look further
-                    break
+            ChessBoard.move(sim_board_a, move)
+            move_values[i] = self._recursive_best_move_value(depth+1, max_depth, sim_board_a, next_unsafe_passives_dict[tuple(move)], next_unsafe_captures_dict[tuple(move)], current_colour*-1)[1]
 
+        best_move_value = None
+        best_moves_bool_a = None
+        if current_colour == Colour.WHITE:
+            best_move_value = np.max(move_values)
+            best_moves_bool_a = move_values == best_move_value
+        else:
+            best_moves_bool_a = move_values == best_move_value
+            best_move_value = np.min(move_values)
+
+        best_moves = moves[best_moves_bool_a]
+        best_move = best_moves[self.rng.integers(0, best_moves.shape[0])]
         return (best_move, best_move_value)
+
+
+    # def _resursive_best_move_values(self, depth, max_depth, board_a, current_colour, moves=None):
+    #     if King.id*Colour.WHITE not in board_a: # Black has won - terminal condition
+    #         return (None, self.neg_inf)
+    #     if King.id*Colour.BLACK not in board_a: # White has won - terminal condition
+    #         return (None, self.inf)
+    #     if depth == max_depth: # End of search tree - terminal condition
+    #         value_board = self.vectorized_value_transform(board_a)
+    #         value_board[np.isinf(value_board)] = 0
+    #         return (None, np.sum(value_board))
+
+    #     if None == moves:
+    #         passives, captures = ChessBoard.get_passives_captures(board_a, current_colour)
+    #         moves = self._passives_captures_dict_to_move_list(passives, captures)
+
+    #     len_moves = len(moves)
+
+    #     if len_moves == 0: # No moves to compute - terminal conditions
+    #         return (None, 0) # TODO: What should be the right board value for this?
+
+    #     # recursive case
+    #     best_move = None
+    #     comp_func = None
+    #     best_move_value = None
+    #     if current_colour == Colour.WHITE:
+    #         comp_func = max
+    #         best_move_value = self.neg_inf
+    #     else:
+    #         comp_func = min
+    #         best_move_value = self.inf
+
+    #     for move in moves:
+    #         from_move, to_move = move
+    #         sim_board_a = board_a.copy()
+    #         ChessBoard.move(sim_board_a, from_move, to_move)
+    #         sim_move_value = self._resursive_best_move_values(depth+1, max_depth, sim_board_a, current_colour*-1)[1]
+    #         if best_move_value != comp_func(best_move_value, sim_move_value):
+    #             best_move_value = sim_move_value
+    #             best_move = move
+    #         # best_move_value = comp_func(best_move_value, sim_move_value)
+    #         if current_colour == Colour.WHITE:
+    #             if best_move_value == self.inf: # We have achieved the highest possible value - no need to look further
+    #                 break
+    #         else:
+    #             if best_move_value == self.neg_inf: # We have achieved the lowest possible value - no need to look further
+    #                 break
+
+    #     return (best_move, best_move_value)
 
 
         # len_moves = len(moves)
@@ -278,43 +325,55 @@ class ConsolePlayer(Player):
         return board_state
 
     def send_action(self, observation):
-        colour = "White" if observation.colour == Colour.WHITE else "Black"
-        action_input = ""
-        action = None
-        render_board_ascii(observation.cb)
-        while True:
-            action_input = input(f"(Move {colour}) >> ")
-            if len(action_input.split(' ')) == 1:
-                try:
-                    render_figure_moves_ascii(observation.cb, ChessBoard.get_pos_coord(action_input))
-                    fig, c = FIGURE_ID_MAP[observation.cb[ChessBoard.get_pos_coord(action_input)]]
-                    col = "white" if c == Colour.WHITE else "black"
-                    print(f"Possible moves by {action_input} ({fig.name[1]} [{col}])")
-                except:
-                    print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece")
-                    print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-                    render_board_ascii(observation.cb)
-            elif len(action_input.split(' ')) == 2:
-                pos1, pos2 = action_input.split(' ')
-                coord1 = ChessBoard.get_pos_coord(pos1)
-                coord2 = ChessBoard.get_pos_coord(pos2)
-                if observation.cb[coord1] == 0:
-                    print("Invalid input - You can only move your own chess pieces")
-                elif (coord1 not in [ x[1] for x in observation.passives ]) and (coord1 not in [ x[1] for x in observation.captures ]):
-                    print("Invalid input - You cannot move the piece at the specified position")
-                    print("input a single board position (e.g. Aa1) to display the moves of that chess piece")
-                elif (coord2 not in observation.passives.get(coord1, [])) and (coord2 not in observation.captures.get(coord1, [])):
-                    print("Invalid input - You cannot move/capture to the specified location")
-                    print("input a single board position (e.g. Aa1) to display the moves of that chess piece")
-                else:
-                    action = (coord1, coord2)
-                    break
-                render_board_ascii(observation.cb)
-            else:
-                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of that chess piece (Too many arguments)")
-                print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-                render_board_ascii(observation.cb)
+        colour_str = "White" if observation.colour == Colour.WHITE else "Black"
+        action = self._get_input(observation, colour_str)
         return action
+
+    def _get_input(self, observation, colour_str):
+        render_board_ascii(observation.cb)
+        action_input = input(f"(Move {colour_str}) >> ")
+        action_input_split = action_input.split(' ')
+        len_action_input_split = len(action_input_split)
+        if len_action_input_split == 1:
+            pos_coord = None
+            try:
+                pos_coord = ChessBoard.get_pos_coord(action_input_split[0])
+            except:
+                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
+                print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+            if pos_coord != None:
+                render_figure_moves_ascii(observation.cb, ChessBoard.get_pos_coord(action_input))                
+            return self._get_input(observation, colour_str)
+        elif len_action_input_split == 2:
+            pos_coord1 = None
+            pos_coord2 = None
+            try:
+                pos_coord1 = ChessBoard.get_pos_coord(action_input_split[0])
+                pos_coord2 = ChessBoard.get_pos_coord(action_input_split[1])
+            except:
+                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
+                print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+            if pos_coord1 != None and pos_coord2 != None:
+                pos_coord1_a = np.array(pos_coord1)
+                pos_coord2_a = np.array(pos_coord2)
+                if pos_coord1_a not in observation.passives[:, 2:5] and pos_coord1_a not in observation.captures[:, 2:5]:
+                    print("Invalid input - You cannot move the piece at the specified position")
+                    print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
+                    return self._get_input(observation, colour_str)
+                else:
+                    pos_coord1_passives, pos_coord1_captures = ChessBoard.get_piece_passives_captures(observation.passives, observation.captures, pos_coord1)
+                    if pos_coord2 not in pos_coord1_passives[:, 5:8] and pos_coord2 not in pos_coord1_captures[:, 5:8]:
+                        print("Invalid input - You cannot move/capture to the specified location")
+                        print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
+                        return self._get_input(observation, colour_str)
+                    else:
+                        return ChessBoard.get_move_from_passives_captures(pos_coord1_passives, pos_coord1_captures, pos_coord1_a, pos_coord2_a)
+            else:
+                return self._get_input(observation, colour_str)
+        else:
+            print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece (Too many arguments)")
+            print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+            return self._get_input(observation, colour_str)
 
     def receive_reward(self, reward_value, move_history):
         return super().receive_reward(reward_value, move_history)
