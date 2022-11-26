@@ -1,7 +1,9 @@
 # from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
 # from raumschach.figures import Colour, Pawn, Queen
+from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
+from raumschach.figures import Colour
 from raumschach.game import ChessGame
-from raumschach.player import ConsolePlayer, DummyPlayer, MiniMaxPlayer, RandomPlayer
+from raumschach.player import AlphaBetaPlayer, ConsolePlayer, DummyPlayer, MiniMaxPlayer, RandomPlayer
 import datetime
 import numpy as np
 
@@ -27,9 +29,9 @@ from raumschach.render import render_board_ascii
 # game = ChessGame(MiniMaxPlayer(search_depth=2, rand_seed=1), MiniMaxPlayer(search_depth=2, rand_seed=1), 5)
 # game.play()
 
-# board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
+board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
 
-# n = 200
+# n = 1000
 # start_time = start_time = datetime.datetime.now()
 # for i in range(n):
 #     for piece_pos in [ (p[0], p[1], p[2]) for p in np.asarray((board.cube > 0).nonzero()).T ]:
@@ -37,10 +39,11 @@ from raumschach.render import render_board_ascii
 # stop_time = datetime.datetime.now()
 # print(f"generate figure moves captures avg : {((stop_time - start_time).total_seconds()) / n} s")
 
-# n = 200
+# n = 100
 # start_time = start_time = datetime.datetime.now()
 # for i in range(n):
-#     ChessBoard.get_passives_captures(board.cube)
+#     m = np.concatenate(ChessBoard.get_passives_captures(board.cube, simulate_safe_moves=False, colour=Colour.WHITE), axis=0)
+#     ChessBoard.get_safe_moves_simulated(board.cube, m, Colour.WHITE)
 # stop_time = datetime.datetime.now()
 # print(f"generate player moves captures avg : {((stop_time - start_time).total_seconds()) / n} s")
 
@@ -54,13 +57,15 @@ from raumschach.render import render_board_ascii
 # board._generate_figure_passives_captures((1, 1, 0)) # Pawn
 # board._generate_figure_passives_captures((3, 3, 4)) # pawn
 
-n = 100
+n = 3
 counter = [0, 0, 0]
 start_time = datetime.datetime.now()
 for i in range(1, n+1):
     print("Game", i)
     # game = ChessGame(RandomPlayer(rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
-    game = ChessGame(MiniMaxPlayer(search_depth=1), MiniMaxPlayer(search_depth=1), 5)
+    # game = ChessGame(MiniMaxPlayer(search_depth=3, rand_seed=i-1), MiniMaxPlayer(search_depth=3, rand_seed=i-1), 5)
+    # game = ChessGame(AlphaBetaPlayer(search_depth=3, rand_seed=i-1), AlphaBetaPlayer(search_depth=3, rand_seed=i+1), 5)
+    game = ChessGame(AlphaBetaPlayer(search_depth=2, rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
     win_player = game.play()
     counter[1+win_player] += 1
 stop_time = datetime.datetime.now()

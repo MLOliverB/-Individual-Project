@@ -73,9 +73,7 @@ class ChessGame():
 
         # TODO Negative reward for doing illegal move
         # check if the action is legal
-        print(passives, action in passives)
-        print(captures, action in captures)
-        if (action not in passives) and (action not in captures):
+        if (~np.any(np.all(action == passives, axis=1))) and (~np.any(np.all(action == captures, axis=1))):
             raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
         
 
@@ -88,7 +86,7 @@ class ChessGame():
             self.no_progress += 1
             if FIGURE_ID_MAP[action[0]][0] == Pawn:
                 self.no_progress = 0
-            elif action in captures:
+            elif np.any(np.all(action == captures, axis=1)):
                 self.no_progress = 0
             elif self.no_progress > 50:
                 self.is_checked[player_num] = False
