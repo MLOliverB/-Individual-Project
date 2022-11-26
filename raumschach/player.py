@@ -144,7 +144,7 @@ class AlphaBetaPlayer(Player):
         return board_state
 
     def send_action(self, observation):
-        moves = np.concatenate([observation.passives, observation.captures], axis=0)
+        moves = np.concatenate([observation.captures, observation.passives], axis=0)
         best_move, best_value = self._recursive_alphabeta(0, self.search_depth, self.neg_inf, self.inf, observation.cb, moves, observation.colour)
         return best_move
 
