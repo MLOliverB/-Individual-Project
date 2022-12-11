@@ -63,7 +63,9 @@ for i in range(1, n+1):
     # game = ChessGame(MiniMaxPlayer(search_depth=3, rand_seed=i-1), MiniMaxPlayer(search_depth=3, rand_seed=i-1), 5)
     # game = ChessGame(AlphaBetaPlayer(search_depth=3, rand_seed=i-1), AlphaBetaPlayer(search_depth=3, rand_seed=i+1), 5)
     # game = ChessGame(AlphaBetaPlayer(search_depth=2, rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
-    game = ChessGame(AlphaBetaPlayer(search_depth=4, rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
+    game = ChessGame(RandomPlayer(rand_seed=i-1), AlphaBetaPlayer(search_depth=2, rand_seed=i+1), 5)
+    # game = ChessGame(AlphaBetaPlayer(search_depth=4, rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
+    # game = ChessGame(CachedAlphaBetaPlayer(search_depth=2, rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
     win_player = game.play()
     counter[1+win_player] += 1
 stop_time = datetime.datetime.now()

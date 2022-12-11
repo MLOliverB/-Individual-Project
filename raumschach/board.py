@@ -116,7 +116,7 @@ class ChessBoard:
             return (np.empty(shape=(0,8), dtype=np.int32) if passives_a.shape[0] == 0 else passives_a, np.empty(shape=(0,8), dtype=np.int32) if captures_a.shape[0] == 0 else captures_a)
 
     @staticmethod
-    def get_passives_captures(board_a, colour=None, simulate_safe_moves=True) -> tuple[np.ndarray, np.ndarray] | tuple[tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
+    def get_passives_captures(board_a: np.ndarray, colour=None, simulate_safe_moves=True) -> tuple[np.ndarray, np.ndarray] | tuple[tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
         white_positions = np.asarray((board_a > 0).nonzero()).T
         black_positions = np.asarray((board_a < 0).nonzero()).T
 
@@ -164,6 +164,7 @@ class ChessBoard:
         else:
             return ((white_passives, white_captures), (black_passives, black_captures))
 
+
     @staticmethod
     def get_safe_moves(board_a, unsafe_moves, colour, ally_king_pos=None, enemy_king_pos=None):
         if ally_king_pos == None or enemy_king_pos == None:
@@ -176,6 +177,16 @@ class ChessBoard:
                 is_safe_move[i] = 1
 
         return unsafe_moves[is_safe_move]
+
+    @staticmethod
+    def get_safe_moves_generator(board_a, unsafe_moves: np.ndarray, colour, ally_king_pos=None, enemy_king_pos=None):
+        if ally_king_pos == None or enemy_king_pos == None:
+            ally_king_pos, enemy_king_pos = ChessBoard.get_ally_enemy_king_pos(board_a, colour)
+
+        for i in range(unsafe_moves.shape[0]):
+            move: np.ndarray = unsafe_moves[i]
+            if ChessBoard.is_safe_move(board_a, move, colour, ally_king_pos, enemy_king_pos):
+                yield move
 
 
     def get_safe_moves_simulated(board_a: np.ndarray, unsafe_moves: np.ndarray, colour, ally_king_pos=None, enemy_king_pos=None):
