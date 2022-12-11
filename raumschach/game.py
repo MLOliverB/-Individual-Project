@@ -68,7 +68,7 @@ class ChessGame():
         # TODO Negative reward for doing illegal move
         # check if the action is legal
         if not BoardState.is_legal_move(self.board_state, action):
-            raise IllegalActionException("The given action is not part of the currently legal moves or captures.")
+            raise IllegalActionException(f"The given action '{action}' is not part of the currently legal moves or captures.")
         
 
         # Implement the action on the chess board
