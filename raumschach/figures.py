@@ -18,22 +18,22 @@ class Figure(object, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def id(self):
+    def id(self) -> int:
         pass
 
     @property
     @abstractmethod
-    def name(self):
+    def name(self) -> str:
         pass
 
     @property
     @abstractmethod
-    def value(self):
+    def value(self) -> int:
         pass
 
     @property
     @abstractmethod
-    def can_jump(self):
+    def can_jump(self) -> bool:
         pass
 
     @property
@@ -56,7 +56,20 @@ class Pawn(Figure):
     id = 1
     name = ('p', "Pawn", 'P')
     value = 1 # Set as the unit value
-    can_jump = False
+    single_passives_or_captures = []
+    single_passives = [
+        [ 1, 0, 0],
+        [ 0, 1, 0],
+    ]
+    single_captures = [
+        [ 0, 1, 1],
+        [ 0, 1,-1],
+        [ 1, 0, 1],
+        [ 1, 0,-1],
+        #[1, 1, 0] # Variant that is debatable - Supported in A Guide to Fairy Chess by Anthony Dickens
+    ]
+    successive_passives_or_captures = []
+    successive_passives = []
     passive_or_capture = []
     passives = [
         lambda x, c: (1*c, 0, 0, None),
@@ -74,7 +87,20 @@ class Unicorn(Figure):
     id = 2
     name = ('u', "Unicorn", 'U')
     value = 3 # Subject to change
-    can_jump = False
+    single_passives_or_captures = []
+    single_passives = []
+    single_captures = []
+    successive_passives_or_captures = [
+        [ 1,  1,  1],
+        [-1, -1, -1],
+        [ 1, -1,  1],
+        [-1,  1, -1],
+        [-1, -1,  1],
+        [ 1,  1, -1],
+        [-1,  1,  1],
+        [ 1, -1, -1],
+    ]
+    successive_passives = []
     passive_or_capture = [
         lambda x, c: (x, x, x, x+1),
         lambda x, c: (-x, -x, -x, x+1),
@@ -92,7 +118,18 @@ class Rook(Figure):
     id = 3
     name = ('r', "Rook", 'R')
     value = 5 # Subject to change
-    can_jump = False
+    single_passives_or_captures = []
+    single_passives = []
+    single_captures = []
+    successive_passives_or_captures = [
+        [ 1,  0,  0],
+        [-1,  0,  0],
+        [ 0,  1,  0],
+        [ 0, -1,  0],
+        [ 0,  0,  1],
+        [ 0,  0, -1],
+    ]
+    successive_passives = []
     passive_or_capture = [
         lambda x, c: (x, 0, 0, x+1),
         lambda x, c: (-x, 0, 0, x+1),
@@ -108,7 +145,21 @@ class Bishop(Figure):
     id = 4
     name = ('b', "Bishop", 'B')
     value =  5 # Subject to change
-    can_jump = False
+    single_passives_or_captures = []
+    single_passives = []
+    single_captures = []
+    successive_passives_or_captures = [
+        [ 0,  1, -1],
+        [ 0, -1,  1],
+        [ 0,  1,  1],
+        [ 0, -1, -1],
+        [ 1,  1,  0],
+        [-1, -1,  0],
+        [-1,  1,  0],
+        [ 1, -1,  0],
+        
+    ]
+    successive_passives = []
     passive_or_capture = [
         lambda x, c: (x, x, 0, x+1),
         lambda x, c: (-x, -x, 0, x+1),
@@ -126,7 +177,36 @@ class Knight(Figure):
     id = 5
     name = ('n', "Knight", 'N')
     value = 9 # Subject to change
-    can_jump = True
+    single_passives_or_captures = [
+        [ 0,  1,  2],
+        [ 0, -1, -2],
+        [ 0,  1, -2],
+        [ 0, -1,  2],
+        [ 0,  2,  1],
+        [ 0, -2, -1],
+        [ 0,  2, -1],
+        [ 0, -2,  1],
+        [ 1,  0,  2],
+        [-1,  0, -2],
+        [ 1,  0, -2],
+        [-1,  0,  2],
+        [ 1,  2,  0],
+        [-1, -2,  0],
+        [ 1, -2,  0],
+        [-1,  2,  0],
+        [ 2,  0,  1],
+        [-2,  0, -1],
+        [ 2,  0, -1],
+        [-2,  0,  1],
+        [ 2,  1,  0],
+        [-2, -1,  0],
+        [ 2, -1,  0],
+        [-2,  1,  0],
+    ]
+    single_passives = []
+    single_captures = []
+    successive_passives_or_captures = []
+    successive_passives = []
     passive_or_capture = [
         lambda x, c: (0, 1, 2, None),
         lambda x, c: (0, 1, -2, None),
@@ -162,7 +242,11 @@ class Queen(Figure):
     id = 6
     name = ('q', "Queen", 'Q')
     value = 15 # Subject to change
-    can_jump = False
+    single_passives_or_captures = []
+    single_passives = []
+    single_captures = []
+    successive_passives_or_captures = Unicorn.successive_passives_or_captures + Rook.successive_passives_or_captures + Bishop.successive_passives_or_captures
+    successive_passives = []
     passive_or_capture = [
         # Unicorn Moves
         lambda x, c: (x, x, x, x+1),
@@ -197,7 +281,11 @@ class King(Figure):
     id = 7
     name = ('k', "King", 'K')
     value = np.inf
-    can_jump = False
+    single_passives_or_captures = Unicorn.successive_passives_or_captures + Rook.successive_passives_or_captures + Bishop.successive_passives_or_captures
+    single_passives = []
+    single_captures = []
+    successive_passives_or_captures = []
+    successive_passives = []
     passive_or_capture = [
         lambda x, c: (-1, -1, -1, None),
         lambda x, c: (-1, -1, 0, None),
@@ -232,7 +320,7 @@ class King(Figure):
     passives = []
     captures = []
 
-
+FIGURES = [Pawn, Unicorn, Rook, Bishop, Knight, Queen, King]
 PROMOTABLE_FIGURES = [Unicorn, Rook, Bishop, Knight, Queen]
 
 

@@ -52,7 +52,7 @@ def render_board_ascii(board_a):
 
 
 
-
+# TODO Change this to fit the new move style
 def render_figure_moves_ascii(board_a, moves):
     size = board_a.shape[0]
     s = np.array(board_a)
