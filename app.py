@@ -26,7 +26,7 @@ import datetime
 # game = ChessGame(MiniMaxPlayer(search_depth=2, rand_seed=1), MiniMaxPlayer(search_depth=2, rand_seed=1), 5)
 # game.play()
 
-board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
+# board = ChessBoard(5, INITIAL_5_5_BOARD_SETUP)
 
 # n = 1000
 # start_time = start_time = datetime.datetime.now()
@@ -63,6 +63,7 @@ for i in range(1, n+1):
     # game = ChessGame(MiniMaxPlayer(search_depth=3, rand_seed=i-1), MiniMaxPlayer(search_depth=3, rand_seed=i-1), 5)
     # game = ChessGame(AlphaBetaPlayer(search_depth=3, rand_seed=i-1), AlphaBetaPlayer(search_depth=3, rand_seed=i+1), 5)
     game = ChessGame(AlphaBetaPlayer(search_depth=2, rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
+    # game = ChessGame(AlphaBetaPlayer(search_depth=4, rand_seed=i-1), RandomPlayer(rand_seed=i+1), 5)
     win_player = game.play()
     counter[1+win_player] += 1
 stop_time = datetime.datetime.now()

@@ -1,4 +1,7 @@
 from abc import ABCMeta, abstractmethod
+import numpy as np
+
+from raumschach.board_state import BoardState
 
 
 class Player(object, metaclass=ABCMeta):
@@ -6,12 +9,9 @@ class Player(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def receive_observation(self, board_state):
-        pass
-
-    def send_action(self, observation):
+    def send_action(self, board_state: BoardState) -> np.ndarray:
         pass
 
     @abstractmethod
-    def receive_reward(self, reward_value, move_history):
+    def receive_reward(self, reward_value: int, move_history: list):
         pass

@@ -1,3 +1,4 @@
+from raumschach.board_state import BoardState
 from raumschach.players.player import Player
 
 from raumschach.board import ChessBoard
@@ -19,13 +20,9 @@ class MiniMaxPlayer(Player):
 
         self.vectorized_value_transform = np.vectorize((lambda x: 0 if x == 0 else FIGURE_ID_MAP[x][0].value*(x/np.abs(x))), otypes='f')
 
-
-    def receive_observation(self, board_state):
-        return board_state
-
-    def send_action(self, observation):
-        moves = np.concatenate([observation.passives, observation.captures], axis=0)
-        best_move, best_value = self._recursive_minimax(0, self.search_depth, observation.cb, moves, observation.colour)
+    def send_action(self, board_state: BoardState):
+        moves = np.concatenate([board_state.passives, board_state.captures], axis=0)
+        best_move, best_value = self._recursive_minimax(0, self.search_depth, board_state.board_a, moves, board_state.colour)
         return best_move
 
     def receive_reward(self, reward_value, move_history):
@@ -51,8 +48,7 @@ class MiniMaxPlayer(Player):
 
         for i in range(safe_moves.shape[0]):
             move = safe_moves[i]
-            sim_board_a = board_a.copy()
-            ChessBoard.move(sim_board_a, move)
+            sim_board_a = ChessBoard.move(board_a, move)
             move_values[i] = self._recursive_minimax(depth+1, max_depth, sim_board_a, next_unsafe_moves[tuple(move)], current_colour*-1)[1]
 
         best_move_value = None
@@ -83,12 +79,9 @@ class AlphaBetaPlayer(Player):
 
         self.vectorized_value_transform = np.vectorize((lambda x: 0 if x == 0 else FIGURE_ID_MAP[x][0].value*(x/np.abs(x))), otypes='f')
 
-    def receive_observation(self, board_state):
-        return board_state
-
-    def send_action(self, observation):
-        moves = np.concatenate([observation.captures, observation.passives], axis=0)
-        best_move, best_value = self._recursive_alphabeta(0, self.search_depth, self.neg_inf, self.inf, observation.cb, moves, observation.colour)
+    def send_action(self, board_state: BoardState):
+        moves = np.concatenate([board_state.captures, board_state.passives], axis=0)
+        best_move, best_value = self._recursive_alphabeta(0, self.search_depth, self.neg_inf, self.inf, board_state.board_a, moves, board_state.colour)
         return best_move
 
     def receive_reward(self, reward_value, move_history):
@@ -125,8 +118,7 @@ class AlphaBetaPlayer(Player):
                     is_safe_move, next_unsafe_moves = ChessBoard.is_safe_move_simulated(board_a, moves[i], current_colour, ally_king_pos, enemy_king_pos)
                 if is_safe_move:
                     move = moves[i]
-                    sim_board_a = board_a.copy()
-                    ChessBoard.move(sim_board_a, move)
+                    sim_board_a = ChessBoard.move(board_a, move)
                     value = self._recursive_alphabeta(depth+1, max_depth, alpha, beta, sim_board_a, next_unsafe_moves, current_colour*-1)[1]
                     if value > best_value:
                         best_value = value
@@ -146,8 +138,7 @@ class AlphaBetaPlayer(Player):
                     is_safe_move, next_unsafe_moves = ChessBoard.is_safe_move_simulated(board_a, moves[i], current_colour, ally_king_pos, enemy_king_pos)
                 if is_safe_move:
                     move = moves[i]
-                    sim_board_a = board_a.copy()
-                    ChessBoard.move(sim_board_a, move)
+                    sim_board_a = ChessBoard.move(board_a, move)
                     value = self._recursive_alphabeta(depth+1, max_depth, alpha, beta, sim_board_a, next_unsafe_moves, current_colour*-1)[1]
                     if value < best_value:
                         best_value = value

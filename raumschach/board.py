@@ -16,48 +16,26 @@ INITIAL_5_5_BOARD_SETUP = [
 
 class ChessBoard:
 
-    def __init__(self, board_size, setup):
-        self.size = board_size
-        self.cube = np.zeros((self.size, self.size, self.size), dtype=np.byte, order='C')
-        for str in setup:
-            fig_name, pos_code = str.split(" ")
+    @staticmethod
+    def init(board_size: int, setup: list[str]) -> np.ndarray:
+        board_a = np.zeros((board_size, board_size, board_size), dtype=np.byte, order='C')
+        for string in setup:
+            fig_name, pos_code = string.split(" ")
             figure, colour = FIGURE_NAME_MAP[fig_name]
             pos = ChessBoard.get_pos_coord(pos_code)
-            self._add(figure, colour, pos)
-
-    def __getitem__(self, key):
-        # FEATURE implement rigurous input checking for key
-        if type(key) == str:
-            return self.cube[ChessBoard.get_pos_coord(key)]
-        elif type(key) == tuple:
-            return self.cube[key]
-        elif type(key) == int:
-            return self.cube[key]
-        else:
-            raise KeyError(f"Key must be tuple or str, not {type(key)}")
-
-    def __setitem__(self, key, value):
-        # FEATURE implement rigurous input checking for key & value
-        if type(key) == str:
-            self.cube[ChessBoard.get_pos_coord(key)] = value
-        elif type(key) == tuple:
-            self.cube[key] = value
-        elif type(key) == int:
-            self.cube[key] = value
-        else:
-            raise KeyError(f"Key must be tuple or str, not {type(key)}")
-
-    def _add(self, figure, colour, pos):
-        self[pos] = figure.id * colour
+            board_a[pos] = figure.id * colour
+        return board_a
 
     @staticmethod
-    def move(board_a, action):
-        if board_a[tuple(action[2:5])] == 0:
+    def move(board_a: np.ndarray, action: np.ndarray) -> np.ndarray:
+        move_board_a = board_a.copy()
+        if move_board_a[tuple(action[2:5])] == 0:
             raise Exception(f"Cannot move piece at {ChessBoard.get_pos_code(tuple(action[2:5]))} since this position is empty - Move {action}")
-        if board_a[tuple(action[2:5])] != action[0]:
+        if move_board_a[tuple(action[2:5])] != action[0]:
             raise Exception(f"Internal state error for piece at {ChessBoard.get_pos_code(tuple(action[2:5]))} - actual piece does not match expeceted piece - Move {action}")
-        board_a[tuple(action[5:8])] = action[1]
-        board_a[tuple(action[2:5])] = 0
+        move_board_a[tuple(action[5:8])] = action[1]
+        move_board_a[tuple(action[2:5])] = 0
+        return move_board_a
 
     @staticmethod
     def _generate_figure_passives_captures(board_a, figure_pos):
@@ -138,7 +116,7 @@ class ChessBoard:
             return (np.empty(shape=(0,8), dtype=np.int32) if passives_a.shape[0] == 0 else passives_a, np.empty(shape=(0,8), dtype=np.int32) if captures_a.shape[0] == 0 else captures_a)
 
     @staticmethod
-    def get_passives_captures(board_a, colour=None, simulate_safe_moves=True):
+    def get_passives_captures(board_a, colour=None, simulate_safe_moves=True) -> tuple[np.ndarray, np.ndarray] | tuple[tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
         white_positions = np.asarray((board_a > 0).nonzero()).T
         black_positions = np.asarray((board_a < 0).nonzero()).T
 
@@ -225,8 +203,7 @@ class ChessBoard:
         if tuple(unsafe_move[5:8]) == enemy_king_pos:
             return True
         else:
-            sim_board_a = board_a.copy()
-            ChessBoard.move(sim_board_a, unsafe_move)
+            sim_board_a = ChessBoard.move(board_a, unsafe_move)
             sim_ally_king_pos = tuple(unsafe_move[5:8]) if unsafe_move[0] == King.id*colour else ally_king_pos
             if not ChessBoard.is_king_under_check(sim_board_a, colour, sim_ally_king_pos):
                 return True
@@ -245,8 +222,7 @@ class ChessBoard:
         if tuple_unsafe_move == enemy_king_pos:
             return (True, np.empty(shape=(0,8), dtype=np.int32))
         else:
-            sim_board_a = board_a.copy()
-            ChessBoard.move(sim_board_a, unsafe_move)
+            sim_board_a = ChessBoard.move(board_a, unsafe_move)
             sim_ally_king_pos = tuple_unsafe_move if unsafe_move[0] == King.id*colour else ally_king_pos
             sim_moves = []
             enemy_positions = np.asarray((sim_board_a < 0).nonzero()).T if colour == Colour.WHITE else np.asarray((sim_board_a > 0).nonzero()).T
@@ -381,13 +357,3 @@ class ChessBoard:
         from_tuple = (from_figure.id* from_colour, from_coord)
         to_tuple   = (to_figure.id  * to_colour,   to_coord)
         return np.array((from_figure.id* from_colour, to_figure.id  * to_colour, from_coord[0], from_coord[1], from_coord[2], to_coord[0], to_coord[1], to_coord[2]))
-
-
-class BoardState():
-    def __init__(self, cube, colour, passives, captures, no_progress_count, state_repetition):
-        self.cb = cube
-        self.colour = colour
-        self.passives = passives
-        self.captures = captures
-        self.no_progress_count = no_progress_count
-        self.state_repetition = state_repetition
