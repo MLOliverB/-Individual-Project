@@ -2,7 +2,7 @@ import numpy as np
 
 from raumschach.board import INITIAL_5_5_BOARD_SETUP, BoardState, ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, Colour, King, Pawn
-from raumschach.player import Player
+from raumschach.players.player import Player
 from raumschach.render import render_board_ascii
 
 class IllegalActionException(Exception):

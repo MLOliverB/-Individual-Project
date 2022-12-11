@@ -1,66 +1,9 @@
-from abc import ABCMeta, abstractmethod
-import numpy as np
+from raumschach.players.player import Player
+
 from raumschach.board import ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, Colour, King
-from raumschach.render import render_board_ascii, render_figure_moves_ascii
 
-
-class Player(object, metaclass=ABCMeta):
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def receive_observation(self, board_state):
-        pass
-
-    def send_action(self, observation):
-        pass
-
-    @abstractmethod
-    def receive_reward(self, reward_value, move_history):
-        pass
-
-
-class DummyPlayer(Player):
-    script = None
-    def __init__(self):
-        super().__init__()
-
-    def receive_observation(self, board_state):
-        return board_state
-
-    def send_action(self, observation):
-        render_board_ascii(observation.cb)
-        return ChessBoard.read_recorded_move(self.script.pop(0))
-
-    def receive_reward(self, reward_value, move_history):
-        return super().receive_reward(reward_value, move_history)
-
-
-class RandomPlayer(Player):
-    def __init__(self, rand_seed=None):
-        super().__init__()
-        if rand_seed == None:
-            rand_seed = np.random.default_rng().integers(-(2**63), high=(2**63 - 1))
-        self.seed = rand_seed
-        self.rng = np.random.default_rng(np.abs(rand_seed))
-
-    def receive_observation(self, board_state):
-        return board_state
-
-    def send_action(self, observation):
-        len_passives = observation.passives.shape[0]
-        len_captures = observation.captures.shape[0]
-        rand_ix = self.rng.integers(0, len_passives+len_captures)
-        if rand_ix < len_passives:
-            return observation.passives[rand_ix]
-        else:
-            return observation.captures[len_passives - rand_ix]
-
-    def receive_reward(self, reward_value, move_history):
-        return super().receive_reward(reward_value, move_history)
-
-
+import numpy as np
 
 class MiniMaxPlayer(Player):
     def __init__(self, search_depth=1, rand_seed=None):
@@ -220,66 +163,3 @@ class AlphaBetaPlayer(Player):
         else:
             best_move = best_moves[self.rng.integers(0, len(best_moves))]
             return (best_move, best_value)
-
-
-# TODO Refactor console player to fit new moves style
-class ConsolePlayer(Player):
-    def __init__(self):
-        super().__init__()
-
-    def receive_observation(self, board_state):
-        return board_state
-
-    def send_action(self, observation):
-        colour_str = "White" if observation.colour == Colour.WHITE else "Black"
-        action = self._get_input(observation, colour_str)
-        return action
-
-    def _get_input(self, observation, colour_str):
-        render_board_ascii(observation.cb)
-        action_input = input(f"(Move {colour_str}) >> ")
-        action_input_split = action_input.split(' ')
-        len_action_input_split = len(action_input_split)
-        if len_action_input_split == 1:
-            pos_coord = None
-            try:
-                pos_coord = ChessBoard.get_pos_coord(action_input_split[0])
-            except:
-                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-            if pos_coord != None:
-                render_figure_moves_ascii(observation.cb, ChessBoard.get_pos_coord(action_input))                
-            return self._get_input(observation, colour_str)
-        elif len_action_input_split == 2:
-            pos_coord1 = None
-            pos_coord2 = None
-            try:
-                pos_coord1 = ChessBoard.get_pos_coord(action_input_split[0])
-                pos_coord2 = ChessBoard.get_pos_coord(action_input_split[1])
-            except:
-                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-            if pos_coord1 != None and pos_coord2 != None:
-                pos_coord1_a = np.array(pos_coord1)
-                pos_coord2_a = np.array(pos_coord2)
-                if pos_coord1_a not in observation.passives[:, 2:5] and pos_coord1_a not in observation.captures[:, 2:5]:
-                    print("Invalid input - You cannot move the piece at the specified position")
-                    print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                    return self._get_input(observation, colour_str)
-                else:
-                    pos_coord1_passives, pos_coord1_captures = ChessBoard.get_piece_passives_captures(observation.passives, observation.captures, pos_coord1)
-                    if pos_coord2 not in pos_coord1_passives[:, 5:8] and pos_coord2 not in pos_coord1_captures[:, 5:8]:
-                        print("Invalid input - You cannot move/capture to the specified location")
-                        print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                        return self._get_input(observation, colour_str)
-                    else:
-                        return ChessBoard.get_move_from_passives_captures(pos_coord1_passives, pos_coord1_captures, pos_coord1_a, pos_coord2_a)
-            else:
-                return self._get_input(observation, colour_str)
-        else:
-            print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece (Too many arguments)")
-            print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-            return self._get_input(observation, colour_str)
-
-    def receive_reward(self, reward_value, move_history):
-        return super().receive_reward(reward_value, move_history)
