@@ -62,15 +62,7 @@ class ChessGame():
         enemy_player, enemy_colour = self.players[enemy_player_num]
         message = None
 
-        # Generate all possible moves for the pieces of this player
-        # We need to generate the moves of all colours however since the King cannot put himself into check
-
-        # passives, captures = self.next_player_passives_captures if self.next_player_passives_captures != None else ChessBoard.get_passives_captures(self.current_board_state.board_a, colour)
-
-        # send the observation to the player and receive the corresponding action
-        # The action is only allowed to be a move
-        # hash_val = self.chess_board.cube.data.tobytes()
-        # state_repetition = self.state_repetition_map[hash_val] if hash_val in self.state_repetition_map else 0
+        # send the observation (i.e. board state) to the player and receive the corresponding action
         action = player.send_action(self.board_state)
 
         # TODO Negative reward for doing illegal move
@@ -125,14 +117,6 @@ class ChessGame():
                     player.receive_reward(1, self.move_history)
                     enemy_player.receive_reward(-1, self.move_history)
                     message = f"Checkmate - ({Colour.string(colour)}) has captured the enemy's king"
-
-
-        # # Generate next moves of white and black pieces and assign them to either this player or the enemy player based on colour
-        # if not message: # The game has not yet ended
-        #     white_next_moves, black_next_moves = ChessBoard.get_passives_captures(self.chess_board.cube)
-        #     this_p_moves = [black_next_moves, None, white_next_moves][1+colour]
-        #     next_p_moves = [black_next_moves, None, white_next_moves][1+enemy_colour]
-        #     self.next_player_passives_captures = next_p_moves
 
 
         # Determine whether we (still) have a check situation
