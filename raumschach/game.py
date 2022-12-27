@@ -40,7 +40,7 @@ class ChessGame():
         while not any(self.is_checkmate):
             message = self.turn(player_num)
             player_num = (player_num + 1) % len(self.players)
-        render_board_ascii(self.board_state.board_a)
+        # render_board_ascii(self.board_state.board_a)
         print('\n' + message)
         winner = 0
         if all(self.is_checkmate):
@@ -52,8 +52,8 @@ class ChessGame():
         elif self.is_checkmate[1]:
             print("White wins!")
             winner = 1
-        print(f"\nMove history: ({len(self.move_history)})")
-        print(self.move_history)
+        # print(f"\nMove history: ({len(self.move_history)})")
+        # print(self.move_history)
         return winner
 
     def turn(self, player_num):
@@ -143,8 +143,8 @@ class ChessGame():
         # Record the move in the move history
         self.move_history.append(ChessBoard.record_move(prev_board_state.board_a, self.board_state.board_a, action, self.is_checked, self.is_checkmate))
 
-        render_board_ascii(self.board_state.board_a)
-        print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
+        # render_board_ascii(self.board_state.board_a)
+        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
 
         if message:
             return message
