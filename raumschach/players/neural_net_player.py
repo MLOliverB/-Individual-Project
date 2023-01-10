@@ -93,6 +93,7 @@ class MoveValueClassifierPlayer(Player):
 
         len_moves = len(moves)
         batch_size = 1000
+        # batch_size = 10
         i = 0
         while i < len_moves:
             vals, legal_probas = self.model(moves[i:i+batch_size])
@@ -146,8 +147,11 @@ class MoveValueClassifierPlayer(Player):
 
         print()
         print("Test Result")
-        print("Average probability given to legal moves:  ", np.average(np.array(legal_proba_lst)), "- Average value given to legal moves:  ", np.average(np.array(legal_val_lst)))
-        print("Average probability given to illegal moves:", np.average(np.array(illegal_proba_lst)), "- Average value given to illegal moves:", np.average(np.array(illegal_val_lst)))
+        print("Average probability given to legal moves:  ", np.average(np.array(legal_proba_lst)))
+        print("Average probability given to illegal moves:", np.average(np.array(illegal_proba_lst)))
+        print()
+        print("Average value given to legal moves:  ", np.average(np.array(legal_val_lst)))
+        print("Average value given to illegal moves:", np.average(np.array(illegal_val_lst)))
         print()
 
 
@@ -195,39 +199,49 @@ class CombinedValueClassifierNN(nn.Module):
 
         in_features = ((self.num_piece_types*4)+2)*(self.cb_size**3)
 
-        self.flatten = nn.Flatten()
         self.preSplit = nn.Sequential(
             # nn.Linear(in_features, in_features),
             # nn.Tanh(),
-            nn.Linear(in_features, self.num_piece_types*(self.cb_size**3)),
+            # nn.Conv3d(in_features, self.num_piece_types*(self.cb_size**3), self.cb_size*2),
+            nn.Conv3d(30, 15, self.cb_size, padding=self.cb_size//2),
+            # nn.Linear(in_features, self.num_piece_types*(self.cb_size**3)),
+            nn.Tanh(),
+            nn.Conv3d(15, 5, self.cb_size, padding=self.cb_size//2),
+            nn.Tanh(),
+            nn.Conv3d(5, 1, self.cb_size, padding=self.cb_size//2),
             nn.Tanh()
         )
+
+        self.flatten = nn.Flatten()
 
         self.classifier = nn.Sequential(
             # nn.Linear(self.num_piece_types*(self.cb_size**3), self.num_piece_types*(self.cb_size**3)),
             # nn.Tanh(),
-            nn.Linear(self.num_piece_types*(self.cb_size**3), self.cb_size**3),
+            nn.Linear(125, 100),
             nn.Sigmoid(),
-            nn.Linear(self.cb_size**3, self.cb_size),
+            nn.Linear(100, 50),
             nn.Sigmoid(),
-            nn.Linear(self.cb_size, 1),
+            nn.Linear(50, 1),
             nn.Sigmoid()
         )
 
         self.value_function = nn.Sequential(
             # nn.Linear(self.num_piece_types*(self.cb_size**3), self.num_piece_types*(self.cb_size**3)),
             # nn.Tanh(),
-            nn.Linear(self.num_piece_types*(self.cb_size**3), self.cb_size**3),
+            nn.Linear(125, 100),
             nn.ReLU(),
-            nn.Linear(self.cb_size**3, self.cb_size),
+            nn.Linear(100, 50),
             nn.ReLU(),
-            nn.Linear(self.cb_size, 1),
+            nn.Linear(50, 1),
             nn.ReLU()
         )
 
     def forward(self, x):
-        x = self.flatten(x)
+        # print(x.shape)
         x = self.preSplit(x)
+        # print(x.shape)
+        x = self.flatten(x)
         class_proba = self.classifier(x)
         move_val = self.value_function(x)
+        # raise Exception("Stop")
         return (move_val, class_proba)
