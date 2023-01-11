@@ -61,7 +61,7 @@ class MoveValueClassifierPlayer(Player):
                 self.sparse_illegal.append(sparse_move)
 
         self.model.eval()
-        vals, legal_probas = self.model(self.sparsify(board_state, legal_moves))
+        decoded, legal_probas, vals = self.model(self.sparsify(board_state, legal_moves))
 
         max_value = np.argmax(vals.detach().numpy())
         if type(max_value) == type(np.ndarray):
@@ -99,10 +99,21 @@ class MoveValueClassifierPlayer(Player):
         # batch_size = 10
         i = 0
         while i < len_moves:
-            vals, legal_probas = self.model(moves[i:i+batch_size])
-            loss = torch.nn.functional.mse_loss(legal_probas[:, 0], class_vals[i:i+batch_size])
+            decoded_moves, legal_probas, vals = self.model(moves[i:i+batch_size])
+            # vals, legal_probas = self.model(moves[i:i+batch_size])
+            # print(legal_probas.shape)
+            # print(decoded_moves.shape)
+            # print(moves[i:i+batch_size].shape)
+            # print(moves[i:i+batch_size, None].shape)
+            # raise Exception("Stop")
+
+            decoder_loss = torch.nn.functional.mse_loss(decoded_moves, moves[i:i+batch_size])
+            # class_loss = torch.nn.functional.mse_loss(legal_probas[:, 0], class_vals[i:i+batch_size])
+            class_loss = torch.nn.functional.mse_loss(legal_probas, class_vals[i:i+batch_size, None])
+
             self.optimizer.zero_grad()
-            loss.backward()
+            decoder_loss.backward(retain_graph=True)
+            class_loss.backward()
             self.optimizer.step()
             i += batch_size
 
@@ -128,10 +139,11 @@ class MoveValueClassifierPlayer(Player):
         moves = torch.from_numpy(np.stack(moves, axis=0))
         moves = moves.to(self.device)
 
-        vals, legal_probas = self.model(moves)
+        decoded_moves, legal_probas, vals = self.model(moves)
 
-        moves = moves.detach().numpy()
+        numpy_moves = moves.detach().numpy()
         class_vals = class_vals.detach().numpy()
+        # decoded_moves = decoded_moves.detach().numpy()
         legal_probas = legal_probas.detach().numpy()
         vals = vals.detach().numpy()
 
@@ -140,7 +152,7 @@ class MoveValueClassifierPlayer(Player):
         illegal_proba_lst = []
         illegal_val_lst = []
 
-        for i in range(len(moves)):
+        for i in range(len(numpy_moves)):
             if (class_vals[i]) == 0:
                 illegal_proba_lst.append(np.average(np.array(legal_probas[i])))
                 illegal_val_lst.append(np.average(np.array(vals[i])))
@@ -148,8 +160,12 @@ class MoveValueClassifierPlayer(Player):
                 legal_proba_lst.append(np.average(np.array(legal_probas[i])))
                 legal_val_lst.append(np.average(np.array(vals[i])))
 
+        decoded_loss = torch.nn.functional.mse_loss(decoded_moves, moves)
+
         print()
         print("Test Result")
+        print("Decoder Loss:", decoded_loss.item())
+        print()
         print("Average probability given to legal moves:  ", np.average(np.array(legal_proba_lst)))
         print("Average probability given to illegal moves:", np.average(np.array(illegal_proba_lst)))
         print()
@@ -168,7 +184,7 @@ class MoveValueClassifierPlayer(Player):
             append_write = 'w' # make a new file if not
 
         with open(fname, append_write) as f:
-            f.write(f"{curr_time},{np.average(np.array(legal_proba_lst))},{np.average(np.array(illegal_proba_lst))},{np.average(np.array(legal_val_lst))},{np.average(np.array(illegal_val_lst))}\n")
+            f.write(f"{curr_time},{decoded_loss},{np.average(np.array(legal_proba_lst))},{np.average(np.array(illegal_proba_lst))},{np.average(np.array(legal_val_lst))},{np.average(np.array(illegal_val_lst))}\n")
 
         # with open(dirname + "Model-" + str(self.cb_size) + "-" + str(curr_time) + ".torchmodel", 'w+') as f:
         torch.save(self.model.state_dict(), dirname + "Model-" + str(self.cb_size) + "-" + str(curr_time) + ".torchmodel")
@@ -218,7 +234,9 @@ class CombinedValueClassifierNN(nn.Module):
 
         in_features = ((self.num_piece_types*4)+2)*(self.cb_size**3)
 
-        self.preSplit = nn.Sequential(
+        self.flatten = nn.Flatten()
+
+        self.encode = nn.Sequential(
             # nn.Linear(in_features, in_features),
             # nn.Tanh(),
             # nn.Conv3d(in_features, self.num_piece_types*(self.cb_size**3), self.cb_size*2),
@@ -227,40 +245,66 @@ class CombinedValueClassifierNN(nn.Module):
             nn.Tanh(),
             nn.Conv3d(15, 5, self.cb_size, padding=self.cb_size//2),
             nn.Tanh(),
-            nn.Conv3d(5, 1, self.cb_size, padding=self.cb_size//2),
+            nn.Conv3d(5, 5, self.cb_size),
             nn.Tanh()
         )
 
-        self.flatten = nn.Flatten()
+        self.global_fc = nn.Sequential(
+            nn.Linear(in_features, self.cb_size)
+        )
+
+        self.bottleneck_features = 2*self.cb_size
+
+        self.decode = nn.Sequential(
+            nn.ConvTranspose3d(10, 10, self.cb_size),
+            nn.Tanh(),
+            nn.ConvTranspose3d(10, 15, self.cb_size, padding=self.cb_size//2),
+            nn.Tanh(),
+            nn.ConvTranspose3d(15, 30, self.cb_size, padding=self.cb_size//2),
+            nn.Tanh()
+        )
 
         self.classifier = nn.Sequential(
-            # nn.Linear(self.num_piece_types*(self.cb_size**3), self.num_piece_types*(self.cb_size**3)),
-            # nn.Tanh(),
-            nn.Linear(125, 100),
+            nn.Linear(self.bottleneck_features, self.cb_size**3),
             nn.Sigmoid(),
-            nn.Linear(100, 50),
+            nn.Linear(self.cb_size**3, self.cb_size**2),
             nn.Sigmoid(),
-            nn.Linear(50, 1),
+            nn.Linear(self.cb_size**2, 1),
             nn.Sigmoid()
         )
 
         self.value_function = nn.Sequential(
-            # nn.Linear(self.num_piece_types*(self.cb_size**3), self.num_piece_types*(self.cb_size**3)),
-            # nn.Tanh(),
-            nn.Linear(125, 100),
+            nn.Linear(self.bottleneck_features, self.cb_size**3),
             nn.ReLU(),
-            nn.Linear(100, 50),
+            nn.Linear(self.cb_size**3, self.cb_size**2),
             nn.ReLU(),
-            nn.Linear(50, 1),
+            nn.Linear(self.cb_size**2, 1),
             nn.ReLU()
         )
 
     def forward(self, x):
         # print(x.shape)
-        x = self.preSplit(x)
-        # print(x.shape)
-        x = self.flatten(x)
-        class_proba = self.classifier(x)
-        move_val = self.value_function(x)
+        x1 = self.encode(x) # [..., cb_size, 1, 1, 1]
+        x1 = self.flatten(x1) # [..., 5]
+        # print(x1.shape)
+
+        x2 = self.flatten(x) # [..., 30*cb_size^3]
+        x2 = self.global_fc(x2) # [..., cb_size]
+        # print(x2.shape)
+
+        b = torch.concat((x1, x2), dim=1) # [..., 2*cb_size]
+        # print(b.shape)
+
+        b1 = torch.reshape(b, (-1, 2*self.cb_size, 1, 1, 1))
+        y1 = self.decode(b1)
+
+        y2 = self.classifier(b)
+
+        y3 = self.value_function(b)
+
+        # print(y1.shape)
+        # print(y2.shape)
+        # print(y3.shape)
+
         # raise Exception("Stop")
-        return (move_val, class_proba)
+        return (y1, y2, y3) # Decoded vetor, classifier value, move value
