@@ -1,8 +1,11 @@
+import os
 import random
 from torch import cuda
 from torch import nn
 import numpy as np
 import torch
+import time
+
 from raumschach.board import ChessBoard
 
 from raumschach.board_state import BoardState
@@ -153,6 +156,22 @@ class MoveValueClassifierPlayer(Player):
         print("Average value given to legal moves:  ", np.average(np.array(legal_val_lst)))
         print("Average value given to illegal moves:", np.average(np.array(illegal_val_lst)))
         print()
+
+        curr_time = time.time()
+
+        dirname = "res/MoveValueClassifierNetwork/"
+        fname = dirname + "TestPerformance-" + str(self.cb_size) + ".csv"
+        if os.path.exists(fname):
+            append_write = 'a' # append if already exists
+        else:
+            os.makedirs(dirname, exist_ok=True)
+            append_write = 'w' # make a new file if not
+
+        with open(fname, append_write) as f:
+            f.write(f"{curr_time},{np.average(np.array(legal_proba_lst))},{np.average(np.array(illegal_proba_lst))},{np.average(np.array(legal_val_lst))},{np.average(np.array(illegal_val_lst))}\n")
+
+        # with open(dirname + "Model-" + str(self.cb_size) + "-" + str(curr_time) + ".torchmodel", 'w+') as f:
+        torch.save(self.model.state_dict(), dirname + "Model-" + str(self.cb_size) + "-" + str(curr_time) + ".torchmodel")
 
 
     def sparsify(self, board_state: BoardState, moves: np.ndarray):
