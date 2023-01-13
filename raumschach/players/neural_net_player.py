@@ -238,29 +238,42 @@ class CombinedValueClassifierNN(nn.Module):
 
         self.encode = nn.Sequential(
             # nn.Linear(in_features, in_features),
+            # nn.Conv3d(30, 30, self.cb_size, padding=self.cb_size//2),
             # nn.Tanh(),
-            # nn.Conv3d(in_features, self.num_piece_types*(self.cb_size**3), self.cb_size*2),
-            nn.Conv3d(30, 15, self.cb_size, padding=self.cb_size//2),
+            # nn.Conv3d(30, 15, self.cb_size, padding=self.cb_size//2),
+            nn.Conv3d(30, 3, 1, groups=3),
             # nn.Linear(in_features, self.num_piece_types*(self.cb_size**3)),
+            # nn.Tanh(),
+            # nn.Conv3d(15, 5, self.cb_size, padding=self.cb_size//2),
+            # nn.Tanh(),
+            # nn.Conv3d(5, 5, self.cb_size),
             nn.Tanh(),
-            nn.Conv3d(15, 5, self.cb_size, padding=self.cb_size//2),
-            nn.Tanh(),
-            nn.Conv3d(5, 5, self.cb_size),
+            # nn.Flatten(),
+            # nn.Linear(3*(self.cb_size**3), 3*(self.cb_size**3)),
+            nn.Conv3d(3, 3, 1),
             nn.Tanh()
         )
 
         self.global_fc = nn.Sequential(
-            nn.Linear(in_features, self.cb_size)
+            nn.Linear(in_features, self.cb_size**3),
+            nn.Tanh()
         )
 
-        self.bottleneck_features = 2*self.cb_size
+        self.bottleneck = nn.Sequential(
+            nn.Linear(4*(self.cb_size**3), 3*(self.cb_size**3)),
+            nn.Tanh()
+        )
+
+        self.bottleneck_features = 3*(self.cb_size**3)
 
         self.decode = nn.Sequential(
-            nn.ConvTranspose3d(10, 10, self.cb_size),
+            nn.ConvTranspose3d(3, 3, 1),
             nn.Tanh(),
-            nn.ConvTranspose3d(10, 15, self.cb_size, padding=self.cb_size//2),
-            nn.Tanh(),
-            nn.ConvTranspose3d(15, 30, self.cb_size, padding=self.cb_size//2),
+            nn.ConvTranspose3d(3, 30, 1, groups=3),
+            # nn.Tanh(),
+            # nn.ConvTranspose3d(30, 30, self.cb_size, padding=self.cb_size//2),
+            # nn.Tanh(),
+            # nn.ConvTranspose3d(15, 30, self.cb_size, padding=self.cb_size//2),
             nn.Tanh()
         )
 
@@ -285,6 +298,7 @@ class CombinedValueClassifierNN(nn.Module):
     def forward(self, x):
         # print(x.shape)
         x1 = self.encode(x) # [..., cb_size, 1, 1, 1]
+        # print(x1.shape)
         x1 = self.flatten(x1) # [..., 5]
         # print(x1.shape)
 
@@ -292,10 +306,15 @@ class CombinedValueClassifierNN(nn.Module):
         x2 = self.global_fc(x2) # [..., cb_size]
         # print(x2.shape)
 
+        # b = x1
         b = torch.concat((x1, x2), dim=1) # [..., 2*cb_size]
         # print(b.shape)
 
-        b1 = torch.reshape(b, (-1, 2*self.cb_size, 1, 1, 1))
+        b = self.bottleneck(b)
+        # print(b.shape)
+
+        # b1 = torch.reshape(b, (-1, 3, 5, 5, 5))
+        b1 = torch.reshape(b, (-1, 3, 5, 5, 5))
         y1 = self.decode(b1)
 
         y2 = self.classifier(b)
