@@ -10,8 +10,68 @@ from raumschach.board import ChessBoard
 
 from raumschach.board_state import BoardState
 from raumschach.figures import FIGURES
+from raumschach.game import REWARD_DRAW, REWARD_LOSS, REWARD_WIN
 from raumschach.players.player import Player
+from raumschach.reinforcement_learn.deep_NN import ValueNN
 
+
+class NNPlayer(Player):
+
+    is_train: bool
+    model: ValueNN
+    memory: any
+    memory_buffer: list
+    device: any
+
+    def __init__(self, model: ValueNN, memory, device):
+        super().__init__()
+        self.model = model
+        self.memory = memory
+        self.memory_buffer = []
+        self.device = device
+        self.is_train = False
+
+    def train(self, is_train: bool):
+        self.is_train = is_train
+
+    def send_action(self, board_state: BoardState):
+
+        # if self.is_train:
+        #     self.model.train()
+        # else:
+        self.model.eval()
+
+        moves = np.concatenate((board_state.passives, board_state.captures), axis=0)
+        nn_input = self.model.sparsify_moves(board_state, moves).to(self.device)
+
+        vals = self.model(nn_input)
+        vals_np = vals.detach().numpy()
+        max_value_ix = np.argmax(vals_np)
+        if type(max_value_ix) == type(np.ndarray):
+            max_value_ix = max_value_ix[0]
+        move = moves[max_value_ix]
+
+        self.memory_buffer.append((BoardState.move(board_state, move, simple=True).board_a.data.tobytes(), board_state.colour, board_state.state_repetition_count, board_state.no_progress_count))
+
+        # self.memory_buffer.append(BoardState.move(board_state, move, simple=True).board_a.data.tobytes())
+
+        return move
+
+    def receive_reward(self, reward_value, move_history):
+        win_count = 0
+        draw_count = 0
+        loss_count = 0
+        if reward_value == REWARD_WIN:
+            win_count = 1
+        elif reward_value == REWARD_DRAW:
+            draw_count = 1
+        elif reward_value == REWARD_LOSS:
+            loss_count = 1
+        for (board_hash, colour, state_repetition, no_progress) in self.memory_buffer:
+            self.memory.push(board_hash, colour, state_repetition, no_progress, win_count=win_count, draw_count=draw_count, loss_count=loss_count)
+            # self.memory.push(board_hash, win_count=win_count, draw_count=draw_count, loss_count=loss_count)
+        self.memory_buffer = []
+        
 
 class MoveValueClassifierPlayer(Player):
 
@@ -33,6 +93,7 @@ class MoveValueClassifierPlayer(Player):
         self.num_piece_types = num_piece_types
         self.is_train = is_training
         self.device = "cuda" if (use_cuda and cuda.is_available()) else "cpu"
+        print(cuda.is_available(), self.device)
         self.model = CombinedValueClassifierNN(cb_size, num_piece_types)
         self.model.to(self.device)
         
@@ -175,7 +236,7 @@ class MoveValueClassifierPlayer(Player):
 
         curr_time = time.time()
 
-        dirname = "res/MoveValueClassifierNetwork/"
+        dirname = "res/MoveValueClassifierNetwork-2/"
         fname = dirname + "TestPerformance-" + str(self.cb_size) + ".csv"
         if os.path.exists(fname):
             append_write = 'a' # append if already exists

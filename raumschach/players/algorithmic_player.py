@@ -66,9 +66,10 @@ class MiniMaxPlayer(Player):
 
 
 class AlphaBetaPlayer(Player):
-    def __init__(self, search_depth=1, rand_seed=None):
+    def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False):
         super().__init__()
         self.search_depth = search_depth
+        self.play_to_lose = play_to_lose
         self.inf = np.inf
         self.neg_inf = -1*np.inf
 
@@ -108,7 +109,7 @@ class AlphaBetaPlayer(Player):
         best_moves, best_value = [], None
         ally_king_pos, enemy_king_pos = ChessBoard.get_ally_enemy_king_pos(board_a, current_colour)
 
-        if current_colour == Colour.WHITE:
+        if (not self.play_to_lose and current_colour == Colour.WHITE) or (self.play_to_lose and current_colour == Colour.BLACK):
             best_value = self.neg_inf
             for i in range(moves.shape[0]):
                 is_safe_move, next_unsafe_moves = None, None
