@@ -36,9 +36,10 @@ class NNPlayer(Player):
         self.model.eval()
 
         moves = np.concatenate((board_state.passives, board_state.captures), axis=0)
-        nn_input = self.model.sparsify_moves(board_state, moves).to(self.device)
+        nn_sparse_board, nn_meta_data = self.model.sparsify_moves(board_state, moves)
+        nn_sparse_board, nn_meta_data = nn_sparse_board.float().to(self.device), nn_meta_data.float().to(self.device)
 
-        vals = self.model(nn_input)
+        vals = self.model(nn_sparse_board, nn_meta_data)
         vals_np = vals.detach().numpy()
         max_value_ix = np.argmax(vals_np)
         if type(max_value_ix) == type(np.ndarray):

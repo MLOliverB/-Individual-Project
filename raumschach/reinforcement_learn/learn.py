@@ -42,9 +42,9 @@ def learn_simple_value_function(cb_size):
         if i%3 == 0:
             white_player, black_player = RandomPlayer(memory=memory), RandomPlayer(memory=memory)
         elif i%3 == 1:
-            white_player, black_player = AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory)
+            white_player, black_player = AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), RandomPlayer(memory=memory)
         else:
-            white_player, black_player = AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)
+            white_player, black_player = RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory)
 
         game = ChessGame(white_player, black_player, cb_size)
         win_player = game.play()
@@ -53,18 +53,63 @@ def learn_simple_value_function(cb_size):
             input_target_lst = []
             for k, stats in memory.iter():
                 b = stats.board_state
-                input_tensor = model.sparsify_board_state(b.board_a, b.colour, b.state_repetition_count, b.no_progress_count).float().to(device)
+                tensor_board, tensor_meta_data = model.sparsify_board_state(b.board_a, b.colour, b.state_repetition_count, b.no_progress_count)
+                tensor_board, tensor_meta_data = tensor_board.float().to(device), tensor_meta_data.float().to(device)
                 value_board = vectorized_value_transform(b.board_a)
                 if np.sum(np.isinf(value_board)) > 1:
                     value_board[np.isinf(value_board)] = 0
                 target_val = np.sum(value_board) * b.colour
-                input_target_lst.append((input_tensor, torch.tensor(target_val, dtype=input_tensor.dtype)))
+                input_target_lst.append((tensor_board, tensor_meta_data, torch.tensor(target_val, dtype=tensor_board.dtype)))
+            memory.clear()
 
             optimize(model, optimizer, device, input_target_lst)
 
-        if i%1000 == 0:
+        if i%100 == 0:
             dir_path = "res/NN_simple_val_func/"
-            fn = f"model_{i%1000}.ptm"
+            fn = f"model_{i%100}.ptm"
+            os.makedirs(dir_path, exist_ok=True)
+            torch.save(model, dir_path + fn)
+
+def learn_RL(cb_size):
+    rng, device, model, optimizer, memory = network_setup(cb_size)
+
+    # pre-train on games between algorithm-based players
+    for i in range(5000):
+        print(f"\n\n\nPre-train Iteration {i}")
+        white_player, black_player = None, None
+        if i%5 == 0:
+            white_player, black_player = RandomPlayer(memory=memory), RandomPlayer(memory=memory)
+        elif i%5 == 1:
+            white_player, black_player = AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), RandomPlayer(memory=memory)
+        elif i%5 == 2:
+            white_player, black_player = RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)
+        elif i%5 == 3:
+            white_player, black_player = AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory), RandomPlayer(memory=memory)
+        else:
+            white_player, black_player = RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory)
+
+        game = ChessGame(white_player, black_player, cb_size)
+        win_player = game.play()
+
+        if i%50 == 0:
+            input_target_lst = []
+            for k, stats in memory.iter():
+                b = stats.board_state
+                tensor_board, tensor_meta_data = model.sparsify_board_state(b.board_a, b.colour, b.state_repetition_count, b.no_progress_count)
+                tensor_board, tensor_meta_data = tensor_board.float().to(device), tensor_meta_data.float().to(device)
+
+                board_stats = np.array([stats.win_count, stats.draw_count, stats.loss_count])
+                state_values = np.array([WIN_STATE_VALUE, DRAW_STATE_VALUE, LOSS_STATE_VALUE])
+                target_val = np.dot(board_stats, state_values)/np.sum(board_stats)
+                
+                input_target_lst.append((tensor_board, tensor_meta_data, torch.tensor(target_val, dtype=tensor_board.dtype)))
+            memory.clear()
+
+            optimize(model, optimizer, device, input_target_lst)
+
+        if i%100 == 0:
+            dir_path = "res/NN_RL/pre-train/"
+            fn = f"model_{i%100}.ptm"
             os.makedirs(dir_path, exist_ok=True)
             torch.save(model, dir_path + fn)
 
@@ -106,18 +151,23 @@ def learn_simple_value_function(cb_size):
 #             optimize_RL_model(value_net, optimizer, memory, device, cb_size)
 
 def optimize(model, optimizer: optim.Optimizer, device, input_target_lst, batch_size=128):
+    print(f"\nOptimize...    ({len(input_target_lst)} inputs)")
     model.train()
 
     rng = np.random.default_rng()
     rng.shuffle(input_target_lst)
 
+    counter = 0
     while input_target_lst:
+        counter += 1
+        print(f"\rbatch {counter}     ", end="")
         batch, input_target_lst = input_target_lst[:batch_size], input_target_lst[batch_size:]
 
-        inputs = torch.stack([t[0] for t in batch]).to(device)
-        targets = torch.stack([t[1] for t in batch], dim=-1)[:, None].to(device)
+        inputs_board = torch.stack([t[0] for t in batch]).to(device)
+        input_meta_data = torch.stack([t[1] for t in batch]).to(device)
+        targets = torch.stack([t[2] for t in batch], dim=-1)[:, None].to(device)
 
-        vals = model(inputs)
+        vals = model(inputs_board, input_meta_data)
 
         criterion = nn.SmoothL1Loss()
         loss = criterion(vals, targets)
@@ -125,6 +175,7 @@ def optimize(model, optimizer: optim.Optimizer, device, input_target_lst, batch_
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+    print("\r            ")
 
 
 # def optimize_RL_model(model, optimizer: optim.Optimizer, memory, device, cb_size, batch_size=128):
