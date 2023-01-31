@@ -1,7 +1,7 @@
 import numpy as np
 
 from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
-from raumschach.board_state import BoardState
+from raumschach.board_state import REWARD_DRAW, REWARD_LOSS, REWARD_WIN, BoardState
 from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, Colour, King, Pawn
 from raumschach.players.player import Player
 from raumschach.render import render_board_ascii
@@ -13,10 +13,6 @@ class IllegalActionException(Exception):
 SIZE_TO_SETUP_MAP = {
     5: INITIAL_5_5_BOARD_SETUP
 }
-
-REWARD_WIN = 1
-REWARD_DRAW = 0
-REWARD_LOSS = -1
 
 class ChessGame():
 

@@ -7,8 +7,8 @@ from raumschach.figures import FIGURE_ID_MAP, Colour, King
 import numpy as np
 
 class MiniMaxPlayer(Player):
-    def __init__(self, search_depth=1, rand_seed=None):
-        super().__init__()
+    def __init__(self, search_depth=1, rand_seed=None, memory=None):
+        super().__init__(memory=memory)
         self.search_depth = search_depth
         self.inf = np.inf
         self.neg_inf = -1*np.inf
@@ -23,10 +23,11 @@ class MiniMaxPlayer(Player):
     def send_action(self, board_state: BoardState):
         moves = np.concatenate([board_state.passives, board_state.captures], axis=0)
         best_move, best_value = self._recursive_minimax(0, self.search_depth, board_state.board_a, moves, board_state.colour)
+        super().step_memory(board_state, best_move)
         return best_move
 
     def receive_reward(self, reward_value, move_history):
-        return super().receive_reward(reward_value, move_history)
+        return super().commit_memory(reward_value)
 
     def _recursive_minimax(self, depth, max_depth, board_a: np.ndarray, unsafe_moves, current_colour):
         if King.id*Colour.WHITE not in board_a: # Black has won - terminal condition
@@ -66,8 +67,8 @@ class MiniMaxPlayer(Player):
 
 
 class AlphaBetaPlayer(Player):
-    def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False):
-        super().__init__()
+    def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False, memory=None):
+        super().__init__(memory=memory)
         self.search_depth = search_depth
         self.play_to_lose = play_to_lose
         self.inf = np.inf
@@ -83,10 +84,11 @@ class AlphaBetaPlayer(Player):
     def send_action(self, board_state: BoardState):
         moves = np.concatenate([board_state.captures, board_state.passives], axis=0)
         best_move, best_value = self._recursive_alphabeta(0, self.search_depth, self.neg_inf, self.inf, board_state.board_a, moves, board_state.colour)
+        super().step_memory(board_state, best_move)
         return best_move
 
     def receive_reward(self, reward_value, move_history):
-        return super().receive_reward(reward_value, move_history)
+        return super().commit_memory(reward_value)
 
     def _recursive_alphabeta(self, depth, max_depth, alpha, beta, board_a: np.ndarray, unsafe_moves, current_colour):
         # White is alpha (maximizing)

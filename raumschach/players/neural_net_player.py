@@ -23,11 +23,9 @@ class NNPlayer(Player):
     memory_buffer: list
     device: any
 
-    def __init__(self, model: ValueNN, memory, device):
-        super().__init__()
+    def __init__(self, model: ValueNN, device, memory=None):
+        super().__init__(memory=memory)
         self.model = model
-        self.memory = memory
-        self.memory_buffer = []
         self.device = device
         self.is_train = False
 
@@ -35,10 +33,6 @@ class NNPlayer(Player):
         self.is_train = is_train
 
     def send_action(self, board_state: BoardState):
-
-        # if self.is_train:
-        #     self.model.train()
-        # else:
         self.model.eval()
 
         moves = np.concatenate((board_state.passives, board_state.captures), axis=0)
@@ -51,26 +45,12 @@ class NNPlayer(Player):
             max_value_ix = max_value_ix[0]
         move = moves[max_value_ix]
 
-        self.memory_buffer.append((BoardState.move(board_state, move, simple=True).board_a.data.tobytes(), board_state.colour, board_state.state_repetition_count, board_state.no_progress_count))
-
-        # self.memory_buffer.append(BoardState.move(board_state, move, simple=True).board_a.data.tobytes())
+        super().step_memory(board_state, move)
 
         return move
 
     def receive_reward(self, reward_value, move_history):
-        win_count = 0
-        draw_count = 0
-        loss_count = 0
-        if reward_value == REWARD_WIN:
-            win_count = 1
-        elif reward_value == REWARD_DRAW:
-            draw_count = 1
-        elif reward_value == REWARD_LOSS:
-            loss_count = 1
-        for (board_hash, colour, state_repetition, no_progress) in self.memory_buffer:
-            self.memory.push(board_hash, colour, state_repetition, no_progress, win_count=win_count, draw_count=draw_count, loss_count=loss_count)
-            # self.memory.push(board_hash, win_count=win_count, draw_count=draw_count, loss_count=loss_count)
-        self.memory_buffer = []
+        super().commit_memory(reward_value)
         
 
 class MoveValueClassifierPlayer(Player):
@@ -87,8 +67,8 @@ class MoveValueClassifierPlayer(Player):
     sparse_legal: list
     sparse_illegal: list
 
-    def __init__(self, cb_size: int, num_piece_types: int, is_training: bool=True, use_cuda: bool=True):
-        super().__init__()
+    def __init__(self, cb_size: int, num_piece_types: int, is_training: bool=True, use_cuda: bool=True, memory=None):
+        super().__init__(memory=memory)
         self.cb_size = cb_size
         self.num_piece_types = num_piece_types
         self.is_train = is_training
@@ -128,10 +108,13 @@ class MoveValueClassifierPlayer(Player):
         if type(max_value) == type(np.ndarray):
             max_value = max_value[0]
         move = legal_moves[max_value]
+
+        super().step_memory(board_state, move)
+
         return move
 
     def receive_reward(self, reward_value, move_history):
-        pass
+        super().commit_memory(reward_value)
 
     def train(self):
         self.model.train()
