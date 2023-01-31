@@ -44,15 +44,6 @@ class ValueNN(nn.Module):
             state_repetition = post_move_board_state.state_repetition_count
             no_progress = post_move_board_state.no_progress_count
             sparse_flattened_arrays[0] = self.sparsify_board_state(board_a, board_state.colour, state_repetition, no_progress)
-            # ally_a = ally_bitmap.copy()
-            # enemy_a = enemy_bitmap.copy()
-            # for j in (range(len(self.piece_ids))):
-            #     id = self.piece_ids[j]
-            #     ally_a[j][post_move_board_state.board_a == id*ally_colour] = 1
-            #     enemy_a[j][post_move_board_state.board_a == id*enemy_colour] = 1
-            # flat_ally_a = ally_a.flatten()
-            # flat_enemy_a = enemy_a.flatten()
-            # sparse_flattened_arrays[0] = np.concatenate((flat_ally_a, flat_enemy_a, [post_move_board_state.state_repetition_count, ], [post_move_board_state.no_progress_count, ]))
 
         return torch.from_numpy(sparse_flattened_arrays)
 
@@ -73,3 +64,7 @@ class ValueNN(nn.Module):
         flat_ally_bitmap = ally_bitmap.flatten()
         flat_enemy_bitmap = enemy_bitmap.flatten()
         return torch.from_numpy(np.concatenate((flat_ally_bitmap, flat_enemy_bitmap, [state_repetition, ], [no_progress, ])))
+
+    @staticmethod
+    def reconstruct_chessboard(cb_size, board_bytes):
+        return np.reshape(np.frombuffer(board_bytes, dtype=np.byte), (cb_size, cb_size, cb_size))
