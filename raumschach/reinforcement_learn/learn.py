@@ -66,7 +66,7 @@ def learn_simple_value_function(cb_size):
 
         if i%100 == 0:
             dir_path = "res/NN_simple_val_func/"
-            fn = f"model_{i%100}.ptm"
+            fn = f"model_{i//100}.ptm"
             os.makedirs(dir_path, exist_ok=True)
             torch.save(model, dir_path + fn)
 
@@ -109,7 +109,7 @@ def learn_RL(cb_size):
 
         if i%100 == 0:
             dir_path = "res/NN_RL/pre-train/"
-            fn = f"model_{i%100}.ptm"
+            fn = f"model_{i//100}.ptm"
             os.makedirs(dir_path, exist_ok=True)
             torch.save(model, dir_path + fn)
 
