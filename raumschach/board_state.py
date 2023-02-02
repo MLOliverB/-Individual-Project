@@ -20,7 +20,7 @@ class BoardState():
         self.state_repetition_map = state_repetition_map
 
     def simplify(self):
-        return SimpleBoardState(self.turn, self.board_a.copy(), self.colour, self.no_progress_count, self.state_repetition_count)
+        return SimpleBoardState(self.turn, self.board_a.copy(), self.colour, self.no_progress_count, self.state_repetition_count, self.state_repetition_map)
 
     @staticmethod
     def game_setup(board_size: int, setup: list[str]) -> 'BoardState':
@@ -37,10 +37,16 @@ class BoardState():
 
         # Update no progress rule
         no_progress_count = board_state.no_progress_count + 1
-        if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
-            no_progress_count = 0
-        elif np.any(np.all(move == board_state.captures, axis=1)): # A piece was captures
-            no_progress_count = 0
+        if simple:
+            if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
+                no_progress_count = 0
+            elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
+                no_progress_count = 0
+        else:
+            if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
+                no_progress_count = 0
+            elif np.any(np.all(move == board_state.captures, axis=1)): # A piece was captured
+                no_progress_count = 0
 
         # Update state repetition rule
         state_repetition_map = board_state.state_repetition_map.copy()
@@ -51,7 +57,7 @@ class BoardState():
             state_repetition_map[hash_val] = 1
 
         if simple:
-            return SimpleBoardState(board_state.turn+1, board_a, colour, no_progress_count, state_repetition_map[hash_val])
+            return SimpleBoardState(board_state.turn+1, board_a, colour, no_progress_count, state_repetition_map[hash_val], state_repetition_map)
         else:
             passives, captures = ChessBoard.get_passives_captures(board_a, colour)
             return BoardState(board_state.turn+1, colour, board_a, passives, captures, no_progress_count, state_repetition_map[hash_val], state_repetition_map)
@@ -67,5 +73,5 @@ class BoardState():
             return False
 
 class SimpleBoardState(BoardState):
-    def __init__(self, turn_no, cube, colour, no_progress_count, state_repetition):
-        super().__init__(turn_no, colour, cube, None, None, no_progress_count, state_repetition, None)
+    def __init__(self, turn_no, cube, colour, no_progress_count, state_repetition, state_repetition_map):
+        super().__init__(turn_no, colour, cube, None, None, no_progress_count, state_repetition, state_repetition_map)
