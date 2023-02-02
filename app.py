@@ -8,13 +8,16 @@ from raumschach.game import ChessGame
 import datetime
 
 from raumschach.players.neural_net_player import MoveValueClassifierPlayer
-from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function
+from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function, test_network
 
 # game = ChessGame(AlphaBetaPlayer(search_depth=4, play_to_lose=True), AlphaBetaPlayer(search_depth=4), 5)
 # winner = game.play()
 
+# ChessGame(AlphaBetaTreeSearchPlayer(search_depth=2), RandomPlayer(), 5).play()
 
-learn_RL(5)
+test_network("C:/Users/Oliver/Downloads/res/NN_simple_val_func/model_16.ptm", 5, tree_search=True)
+# test_network("C:/Users/Oliver/Downloads/res/NN_RL/pre-train/model_14.ptm", 5)
+# learn_RL(5)
 # learn_simple_value_function(5)
 
 # script = ['N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3', 'n:Eb5-Ea3', 'N:Aa3-Ab1', 'n:Ea3-Eb5', 'N:Ab1-Aa3'] # Testing threefold repetition rule

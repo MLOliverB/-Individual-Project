@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 
-from raumschach.board_state import BoardState
+from raumschach.board_state import BoardState, SimpleBoardState
 from raumschach.figures import Colour
 
 class ValueNN(nn.Module):
@@ -44,6 +44,20 @@ class ValueNN(nn.Module):
         flat_board = self.flatten(conv)
         x = self.combine(flat_board, meta_data)
         return self.linear_layers(x)
+
+    def get_board_state_value_function(self, device):
+
+        def get_board_state_value(simple_board_state: 'SimpleBoardState'):
+            self.eval()
+            sparse_board, meta_data = self.sparsify_board_state(simple_board_state.board_a, simple_board_state.colour, simple_board_state.state_repetition_count, simple_board_state.no_progress_count)
+            # print(sparse_board.shape, meta_data.shape)
+            sparse_board, meta_data = sparse_board[None, :].float().to(device), meta_data[None, :].float().to(device)
+            # print(sparse_board.shape, meta_data.shape)
+            return self(sparse_board, meta_data).item()
+    
+        return get_board_state_value
+
+
 
     def sparsify_moves(self, board_state: 'BoardState', moves):
         bitmap_shape = (self.num_piece_types, self.cb_size, self.cb_size, self.cb_size)
