@@ -1,7 +1,7 @@
 import os
 from raumschach.figures import FIGURE_ID_MAP, FIGURES, Colour
 from raumschach.game import ChessGame
-from raumschach.players.algorithmic_player import AlphaBetaPlayer
+from raumschach.players.algorithmic_player import AlphaBetaPlayer, AlphaBetaTreeSearchPlayer
 from raumschach.players.basic_player import RandomPlayer
 from raumschach.players.neural_net_player import NNPlayer
 from raumschach.reinforcement_learn.deep_NN import ValueNN
@@ -150,6 +150,38 @@ def learn_RL(cb_size):
 #             print("Optimizing...")
 #             optimize_RL_model(value_net, optimizer, memory, device, cb_size)
 
+
+def test_network(disk_path, cb_size, num_test=25, tree_search=False):
+    rng, device, _, optimizer, memory = network_setup(cb_size)
+    model = torch.load(disk_path, map_location=torch.device('cpu')).to(device)
+
+    test_random = [0, 0, 0]
+
+    for i in range(num_test):
+
+        nn_player = None
+        if tree_search:
+            nn_player = AlphaBetaTreeSearchPlayer(search_depth=2, value_function=model.get_board_state_value_function(device))
+        else:
+            nn_player = NNPlayer(model, device)
+        enemy = RandomPlayer()
+
+        if i%2 == 0:
+            white_player, black_player = nn_player, enemy
+        else:
+            black_player, white_player = enemy, nn_player
+
+        game = ChessGame(white_player, black_player, cb_size)
+        win_player = game.play()
+
+        if i%2 == 0:
+            test_random[1+win_player] += 1
+        else:
+            test_random[2-(1+win_player)] += 1
+
+        print(f"Testing against random - Iteration  : {i:5,d} | Wins: {test_random[2]} Draws: {test_random[1]} Losses: {test_random[0]}")
+
+
 def optimize(model, optimizer: optim.Optimizer, device, input_target_lst, batch_size=128):
     print(f"\nOptimize...    ({len(input_target_lst)} inputs)")
     model.train()
@@ -218,6 +250,7 @@ def optimize(model, optimizer: optim.Optimizer, device, input_target_lst, batch_
 #         optimizer.step()
 
 #     memory.clear()
+
 
 
 def neural_net_player_random_weighted_enemy(rng, value_net, memory, device):
