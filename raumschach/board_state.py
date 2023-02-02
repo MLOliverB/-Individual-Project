@@ -37,16 +37,20 @@ class BoardState():
 
         # Update no progress rule
         no_progress_count = board_state.no_progress_count + 1
-        if simple:
-            if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
-                no_progress_count = 0
-            elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
-                no_progress_count = 0
-        else:
-            if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
-                no_progress_count = 0
-            elif np.any(np.all(move == board_state.captures, axis=1)): # A piece was captured
-                no_progress_count = 0
+        if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
+            no_progress_count = 0
+        elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
+            no_progress_count = 0
+        # if simple:
+        #     if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
+        #         no_progress_count = 0
+        #     elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
+        #         no_progress_count = 0
+        # else:
+        #     if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
+        #         no_progress_count = 0
+        #     elif np.any(np.all(move == board_state.captures, axis=1)): # A piece was captured
+        #         no_progress_count = 0
 
         # Update state repetition rule
         state_repetition_map = board_state.state_repetition_map.copy()
