@@ -1,9 +1,10 @@
 import os
 from raumschach.figures import FIGURE_ID_MAP, FIGURES, Colour
 from raumschach.game import ChessGame
-from raumschach.players.algorithmic_player import AlphaBetaPlayer, AlphaBetaTreeSearchPlayer
+from raumschach.players.algorithmic_player import AlphaBetaPlayer, AlphaBetaTreeSearchPlayer, MiniMaxTreeSearchPlayer
 from raumschach.players.basic_player import RandomPlayer
 from raumschach.players.neural_net_player import NNPlayer
+from raumschach.reinforcement_learn.const import DRAW_STATE_VALUE, LOSS_STATE_VALUE, WIN_STATE_VALUE
 from raumschach.reinforcement_learn.deep_NN import ValueNN
 from raumschach.reinforcement_learn.replay_memory import State_Stats, StateMemory
 
@@ -15,9 +16,7 @@ import numpy as np
 
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 
-LOSS_STATE_VALUE = 0.0
-DRAW_STATE_VALUE = 0.5
-WIN_STATE_VALUE  = 1.0
+
 
 def network_setup(cb_size, rand_seed=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -161,7 +160,8 @@ def test_network(disk_path, cb_size, num_test=25, tree_search=False):
 
         nn_player = None
         if tree_search:
-            nn_player = AlphaBetaTreeSearchPlayer(search_depth=2, value_function=model.get_board_state_value_function(device))
+            # nn_player = AlphaBetaTreeSearchPlayer(search_depth=2, value_function=model.get_board_state_value_function(device))
+            nn_player = MiniMaxTreeSearchPlayer(search_depth=2, value_function=model.get_board_state_moves_value_function(device))
         else:
             nn_player = NNPlayer(model, device)
         enemy = RandomPlayer()

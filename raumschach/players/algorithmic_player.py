@@ -7,6 +7,8 @@ from raumschach.figures import FIGURE_ID_MAP, Colour, King
 
 import numpy as np
 
+from raumschach.reinforcement_learn.const import DRAW_STATE_VALUE
+
 class MiniMaxPlayer(Player):
     def __init__(self, search_depth=1, rand_seed=None, memory=None):
         super().__init__(memory=memory)
@@ -159,6 +161,91 @@ class AlphaBetaPlayer(Player):
             best_move = best_moves[self.rng.integers(0, len(best_moves))]
             return (best_move, best_value)
 
+class MiniMaxTreeSearchPlayer(Player):
+    def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState', np.ndarray], np.ndarray] = None):
+        super().__init__(memory)
+
+        self.play_to_lose = play_to_lose
+        self.search_depth = search_depth
+        self.inf = np.inf
+        self.neg_inf = -1*np.inf
+
+        if rand_seed == None:
+            rand_seed = np.random.default_rng().integers(-(2**63), high=(2**63 - 1))
+        self.seed = rand_seed
+        self.rng = np.random.default_rng(np.abs(rand_seed))
+
+        if value_function == None:
+            self.value_function = MiniMaxTreeSearchPlayer._get_std_val_func()
+        else:
+            self.value_function = value_function
+
+    def send_action(self, board_state: BoardState):
+        moves = np.concatenate([board_state.passives, board_state.captures], axis=0)
+        # best_move, best_value = self._tree_search(0, self.search_depth, board_state.board_a, moves, board_state.colour)
+        best_move, best_value = self._tree_search(0, self.search_depth, board_state, moves)
+        super().step_memory(board_state, best_move)
+        return best_move
+
+    def receive_reward(self, reward_value, move_history):
+        return super().commit_memory(reward_value)
+
+    def _tree_search(self, depth, max_depth, simple_board_state: 'SimpleBoardState', unsafe_moves):
+        if King.id*Colour.WHITE not in simple_board_state.board_a: # Black has won - terminal condition
+            return (None, self.neg_inf)
+        if King.id*Colour.BLACK not in simple_board_state.board_a: # White has won - terminal condition
+            return (None, self.inf)
+        
+        # if depth == max_depth: # End of search tree - terminal condition
+        #     return (None, self.value_function(simple_board_state))
+
+        safe_moves, next_unsafe_moves = ChessBoard.get_safe_moves_simulated(simple_board_state.board_a, unsafe_moves, simple_board_state.colour)
+
+        if safe_moves.shape[0] == 0: # No moves to compute - terminal conditions
+            return (None, DRAW_STATE_VALUE) # TODO: What should be the right board value for this?
+
+        move_values = None
+        if depth+1 == max_depth:
+            move_values = self.value_function(simple_board_state, safe_moves)
+        else:
+            move_values = np.full(safe_moves.shape[0], DRAW_STATE_VALUE)
+            for i in range(safe_moves.shape[0]):
+                move = safe_moves[i]
+                sbs = BoardState.move(simple_board_state, move, simple=True)
+                move_values[i] = self._tree_search(depth+1, max_depth, sbs, next_unsafe_moves[tuple(move)])[1]
+
+        best_move_value = None
+        best_moves_bool_a = None
+        colour = simple_board_state.colour
+        white = Colour.WHITE
+        black = Colour.BLACK
+        if (colour == white and not self.play_to_lose) or (colour == black and self.play_to_lose):
+            best_move_value = np.max(move_values)
+            best_moves_bool_a = np.isclose(move_values, best_move_value) #move_values == best_move_value
+        else:
+            best_move_value = np.min(move_values)
+            best_moves_bool_a = np.isclose(move_values, best_move_value) #move_values == best_move_value
+
+        best_moves = safe_moves[best_moves_bool_a]
+        single_best_move = best_moves[self.rng.integers(0, best_moves.shape[0])]
+        return (single_best_move, best_move_value)
+
+    @staticmethod
+    def _get_std_val_func():
+        vectorized_value_transform = np.vectorize((lambda x: 0 if x == 0 else FIGURE_ID_MAP[x][0].value*(x/np.abs(x))), otypes='f')
+
+        def _std_val_func(simple_board_state: 'SimpleBoardState', moves: np.ndarray) -> np.ndarray:
+            vals = []
+            for i in range(moves.shape[0]):
+                move = moves[i]
+                sbs = BoardState.move(simple_board_state, move, simple=True)
+                value_board = vectorized_value_transform(sbs.board_a)
+                value_board[np.isinf(value_board)] = 0
+                vals.append(np.sum(value_board))
+            return np.array(vals)
+
+        return _std_val_func
+
 class AlphaBetaTreeSearchPlayer(Player):
     def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState'], int] = None):
         super().__init__(memory)
@@ -201,7 +288,7 @@ class AlphaBetaTreeSearchPlayer(Player):
         moves = unsafe_moves
 
         if moves.shape[0] == 0:
-            return (None, 0) # TODO: What should be the right board value for this?
+            return (None, DRAW_STATE_VALUE) # TODO: What should be the right board value for this?
 
         # recursive case
         best_moves, best_value = [], None

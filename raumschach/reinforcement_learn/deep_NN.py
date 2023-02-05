@@ -12,6 +12,9 @@ class ValueNN(nn.Module):
 
         self.cb_size = cb_size
         self.piece_ids = piece_id_lst
+        self.piece_id_index_map = dict()
+        for i in range(len(self.piece_ids)):
+            self.piece_id_index_map[self.piece_ids[i]] = i
         self.num_piece_types = num_piece_types
 
         board_features = (self.num_piece_types*2)*(self.cb_size**3)
@@ -57,6 +60,19 @@ class ValueNN(nn.Module):
     
         return get_board_state_value
 
+    def get_board_state_moves_value_function(self, device):
+        
+        def get_values(simple_board_state: 'SimpleBoardState', moves: np.ndarray):
+            self.eval()
+            board_input, meta_data_input = self.sparsify_moves(simple_board_state, moves)
+            board_input, meta_data_input = board_input.float().to(device), meta_data_input.float().to(device)
+            vals = self(board_input, meta_data_input)
+            return vals[:, 0].detach().numpy()
+            print(self(board_input, meta_data_input).shape)
+            raise Exception("lada")
+
+        return get_values
+
 
 
     def sparsify_moves(self, board_state: 'BoardState', moves):
@@ -98,6 +114,20 @@ class ValueNN(nn.Module):
         flat_enemy_bitmap = enemy_bitmap.flatten()
         return torch.from_numpy(np.concatenate((ally_bitmap, enemy_bitmap))), torch.from_numpy(np.array([state_repetition, no_progress]))
         # return torch.from_numpy(np.concatenate((flat_ally_bitmap, flat_enemy_bitmap, [state_repetition, ], [no_progress, ])))
+
+    def move_sparse(self, simple_board_state: 'SimpleBoardState', move, sparse_board_a, meta_data: torch.Tensor):
+        new_simple_board_state = BoardState.move(simple_board_state, move, simple=True)
+
+        old_ally_a, old_enemy_a = torch.split(sparse_board_a.clone(), sparse_board_a.shape[0]//2, dim=0)
+        old_enemy_a[:, move[5], move[6], move[7]] = 0 # It doesn't really matter if this is a capture move or not, there cannot be an enemy piece where the piece moves to
+        old_ally_a[self.piece_id_index_map[abs(move[0])], move[2], move[3], move[4]] = 0
+        old_ally_a[self.piece_id_index_map[abs(move[1])], move[5], move[6], move[7]] = 1
+
+        moved_sparse_board_a = torch.cat((old_enemy_a, old_ally_a), dim=0).flip(dims=(1, 2))
+
+        moved_meta_data = torch.from_numpy(np.array([new_simple_board_state.state_repetition_count, new_simple_board_state.no_progress_count]))
+
+        return new_simple_board_state, moved_sparse_board_a, moved_meta_data
 
     @staticmethod
     def reconstruct_chessboard(cb_size, board_bytes):

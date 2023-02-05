@@ -6,16 +6,23 @@ from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
 from raumschach.game import ChessGame
 
 import datetime
+import numpy as np
+import torch
 
 from raumschach.players.neural_net_player import MoveValueClassifierPlayer
+from raumschach.reinforcement_learn.deep_NN import ValueNN
 from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function, test_network
 
 # game = ChessGame(AlphaBetaPlayer(search_depth=4, play_to_lose=True), AlphaBetaPlayer(search_depth=4), 5)
 # winner = game.play()
 
-# ChessGame(AlphaBetaTreeSearchPlayer(search_depth=2), RandomPlayer(), 5).play()
+# player = AlphaBetaTreeSearchPlayer(search_depth=2)
+# # player = AlphaBetaPlayer(search_depth=2)
+# model = ValueNN(5, len(FIGURES), [ fig.id for fig in FIGURES ])
+# game = ChessGame(player, RandomPlayer(), 5).play()
 
-test_network("C:/Users/Oliver/Downloads/res/NN_simple_val_func/model_16.ptm", 5, tree_search=True)
+
+test_network("C:/Users/Oliver/Downloads/res/NN_simple_val_func/model_16.ptm", 5, tree_search=True, num_test=1)
 # test_network("C:/Users/Oliver/Downloads/res/NN_RL/pre-train/model_14.ptm", 5)
 # learn_RL(5)
 # learn_simple_value_function(5)
