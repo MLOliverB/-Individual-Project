@@ -162,13 +162,16 @@ class AlphaBetaPlayer(Player):
             return (best_move, best_value)
 
 class MiniMaxTreeSearchPlayer(Player):
-    def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState', np.ndarray], np.ndarray] = None):
+    def __init__(self, search_depth=1, branching_factor=500, random_action_p=0.0, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState', np.ndarray], np.ndarray] = None):
         super().__init__(memory)
 
         self.play_to_lose = play_to_lose
         self.search_depth = search_depth
         self.inf = np.inf
         self.neg_inf = -1*np.inf
+
+        self.branching_factor = branching_factor
+        self.random_selection_chance = random_action_p
 
         if rand_seed == None:
             rand_seed = np.random.default_rng().integers(-(2**63), high=(2**63 - 1))
@@ -182,27 +185,76 @@ class MiniMaxTreeSearchPlayer(Player):
 
     def send_action(self, board_state: BoardState):
         moves = np.concatenate([board_state.passives, board_state.captures], axis=0)
-        # best_move, best_value = self._tree_search(0, self.search_depth, board_state.board_a, moves, board_state.colour)
-        best_move, best_value = self._tree_search(0, self.search_depth, board_state, moves)
+
+        random_move = self.rng.choice([True, False], p=[self.random_selection_chance, 1-self.random_selection_chance])
+        if random_move:
+            best_move = moves[self.rng.integers(0, moves.shape[0])]
+        else:
+            # best_move, best_value = self._tree_search(0, self.search_depth, board_state.board_a, moves, board_state.colour)
+            best_move, best_value = self._tree_search(0, self.search_depth, board_state, player_colour=board_state.colour)
         super().step_memory(board_state, best_move)
         return best_move
 
     def receive_reward(self, reward_value, move_history):
         return super().commit_memory(reward_value)
 
-    def _tree_search(self, depth, max_depth, simple_board_state: 'SimpleBoardState', unsafe_moves):
-        if King.id*Colour.WHITE not in simple_board_state.board_a: # Black has won - terminal condition
+    def _tree_search(self, depth, max_depth, simple_board_state: 'SimpleBoardState', player_colour):
+        if King.id*player_colour not in simple_board_state.board_a: # Player has lost - terminal condition
             return (None, self.neg_inf)
-        if King.id*Colour.BLACK not in simple_board_state.board_a: # White has won - terminal condition
+        if King.id*player_colour*-1 not in simple_board_state.board_a: # Player has won - terminal condition
             return (None, self.inf)
         
         # if depth == max_depth: # End of search tree - terminal condition
         #     return (None, self.value_function(simple_board_state))
 
-        safe_moves, next_unsafe_moves = ChessBoard.get_safe_moves_simulated(simple_board_state.board_a, unsafe_moves, simple_board_state.colour)
+        # safe_moves = ChessBoard.get_safe_moves
+        passives, captures = ChessBoard.get_passives_captures(simple_board_state.board_a, simple_board_state.colour, simulate_safe_moves=True)
+        safe_moves = np.concatenate((passives, captures), axis=0)
+
+        # safe_moves, next_unsafe_moves = ChessBoard.get_safe_moves_simulated(simple_board_state.board_a, unsafe_moves, simple_board_state.colour)
 
         if safe_moves.shape[0] == 0: # No moves to compute - terminal conditions
             return (None, DRAW_STATE_VALUE) # TODO: What should be the right board value for this?
+
+        move_values = self.value_function(simple_board_state, safe_moves)
+
+        selected_vals = None
+        selected_moves = None
+        if player_colour == simple_board_state.colour: # Maximize
+            sorted_ixs = np.argsort(move_values)[::-1][0:10]
+            selected_vals = move_values[sorted_ixs]
+            selected_moves = safe_moves[sorted_ixs]
+        else: # Minimize
+            sorted_ixs = np.argsort(move_values)[0:10]
+            selected_vals = move_values[sorted_ixs]
+            selected_moves = safe_moves[sorted_ixs]
+
+        # print(move_values)
+        # print(np.argsort(move_values))
+        # print(np.argsort(move_values)[::-1])
+        # print(np.argsort(move_values)[::-1][0:10])
+        # print(selected_moves)
+
+        # raise Exception()
+
+        if depth+1 == max_depth:
+            ixs = np.argmax(selected_vals, keepdims=True) if player_colour == simple_board_state.colour else np.argmin(selected_vals, keepdims=True)
+            # print(selected_vals)
+            # print(ixs)
+            rng_ix = self.rng.choice(ixs)
+            return (selected_moves[rng_ix], selected_vals[rng_ix])
+        else:
+            vals = np.zeros(selected_vals.shape)
+            for i in range(selected_moves.shape[0]):
+                move = selected_moves[i]
+                vals[i] = self._tree_search(depth+1, max_depth, BoardState.move(simple_board_state, move, simple=True), player_colour)[1]
+            ixs = np.argmax(vals, keepdims=True) if player_colour == simple_board_state.colour else np.argmin(vals, keepdims=True)
+            rng_ix = self.rng.choice(ixs)
+            # print(selected_moves)
+            # print(vals)
+            # print(ixs)
+            # print(rng_ix)
+            return (selected_moves[rng_ix], vals[rng_ix])
 
         move_values = None
         if depth+1 == max_depth:

@@ -11,7 +11,7 @@ import torch
 
 from raumschach.players.neural_net_player import MoveValueClassifierPlayer
 from raumschach.reinforcement_learn.deep_NN import ValueNN
-from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function, test_network
+from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function, test_network, train_reward_RL
 
 # game = ChessGame(AlphaBetaPlayer(search_depth=4, play_to_lose=True), AlphaBetaPlayer(search_depth=4), 5)
 # winner = game.play()
@@ -22,8 +22,9 @@ from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_fu
 # game = ChessGame(player, RandomPlayer(), 5).play()
 
 
-test_network("C:/Users/Oliver/Downloads/res/NN_simple_val_func/model_16.ptm", 5, tree_search=True, num_test=1)
+# test_network("C:/Users/Oliver/Desktop/UofG/University-of-Glasgow/Codebases/Lvl4_COMPSCI4025P_Individual-Project-H/Individual-Project/res/NN_RL/pre-train/model_49.ptm", 5, tree_search=True, num_test=5)
 # test_network("C:/Users/Oliver/Downloads/res/NN_RL/pre-train/model_14.ptm", 5)
+train_reward_RL(5, "C:/Users/Oliver/Desktop/UofG/University-of-Glasgow/Codebases/Lvl4_COMPSCI4025P_Individual-Project-H/Individual-Project/res/NN_RL/pre-train/model_49.ptm")
 # learn_RL(5)
 # learn_simple_value_function(5)
 
