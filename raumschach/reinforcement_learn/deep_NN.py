@@ -54,10 +54,8 @@ class ValueNN(nn.Module):
             self.eval()
             sparse_board, meta_data = self.sparsify_board_state(simple_board_state.board_a, simple_board_state.colour, simple_board_state.state_repetition_count, simple_board_state.no_progress_count)
             # print(sparse_board.shape, meta_data.shape)
-            print(device)
             sparse_board, meta_data = sparse_board[None, :].to(device).float(), meta_data[None, :].to(device).float()
             # print(sparse_board.shape, meta_data.shape)
-            print(sparse_board.device, meta_data.device)
             return self(sparse_board, meta_data).item()
     
         return get_board_state_value
