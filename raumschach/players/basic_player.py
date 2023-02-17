@@ -22,8 +22,8 @@ class DummyPlayer(Player):
 
 
 class RandomPlayer(Player):
-    def __init__(self, rand_seed=None):
-        super().__init__()
+    def __init__(self, rand_seed=None, memory=None):
+        super().__init__(memory=memory)
         if rand_seed == None:
             rand_seed = np.random.default_rng().integers(-(2**63), high=(2**63 - 1))
         self.seed = rand_seed
@@ -33,13 +33,19 @@ class RandomPlayer(Player):
         len_passives = board_state.passives.shape[0]
         len_captures = board_state.captures.shape[0]
         rand_ix = self.rng.integers(0, len_passives+len_captures)
+
+        move = None
         if rand_ix < len_passives:
-            return board_state.passives[rand_ix]
+            move = board_state.passives[rand_ix]
         else:
-            return board_state.captures[len_passives - rand_ix]
+            move = board_state.captures[len_passives - rand_ix]
+
+        super().step_memory(board_state, move)
+
+        return move
 
     def receive_reward(self, reward_value, move_history):
-        return super().receive_reward(reward_value, move_history)
+        return super().commit_memory(reward_value)
 
 # TODO Refactor console player to fit new moves style
 class ConsolePlayer(Player):

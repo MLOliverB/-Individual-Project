@@ -1,7 +1,7 @@
 import numpy as np
 
 from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
-from raumschach.board_state import BoardState
+from raumschach.board_state import REWARD_DRAW, REWARD_LOSS, REWARD_WIN, BoardState
 from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, Colour, King, Pawn
 from raumschach.players.player import Player
 from raumschach.render import render_board_ascii
@@ -40,7 +40,7 @@ class ChessGame():
         while not any(self.is_checkmate):
             message = self.turn(player_num)
             player_num = (player_num + 1) % len(self.players)
-        render_board_ascii(self.board_state.board_a)
+        # render_board_ascii(self.board_state.board_a)
         print('\n' + message)
         winner = 0
         if all(self.is_checkmate):
@@ -52,8 +52,8 @@ class ChessGame():
         elif self.is_checkmate[1]:
             print("White wins!")
             winner = 1
-        print(f"\nMove history: ({len(self.move_history)})")
-        print(self.move_history)
+        # print(f"\nMove history: ({len(self.move_history)})")
+        # print(self.move_history)
         return winner
 
     def turn(self, player_num):
@@ -86,8 +86,8 @@ class ChessGame():
                 self.is_checked[enemy_player_num] = False
                 self.is_checkmate[player_num] = True
                 self.is_checkmate[enemy_player_num] = True
-                player.receive_reward(0, self.move_history)
-                enemy_player.receive_reward(0, self.move_history)
+                player.receive_reward(REWARD_DRAW, self.move_history)
+                enemy_player.receive_reward(REWARD_DRAW, self.move_history)
                 message = "No progress has been achieved the last 50 turns (No pawn moved & no piece captured)." # Draw
 
 
@@ -100,8 +100,8 @@ class ChessGame():
                 self.is_checked[enemy_player_num] = False
                 self.is_checkmate[player_num] = True
                 self.is_checkmate[enemy_player_num] = True
-                player.receive_reward(0, self.move_history)
-                enemy_player.receive_reward(0, self.move_history)
+                player.receive_reward(REWARD_DRAW, self.move_history)
+                enemy_player.receive_reward(REWARD_DRAW, self.move_history)
                 message = "The same board position has been repeated for the third time." # Draw
 
 
@@ -114,8 +114,8 @@ class ChessGame():
                     self.is_checked[player_num] = False
                     self.is_checked[enemy_player_num] = False
                     self.is_checkmate[enemy_player_num] = True
-                    player.receive_reward(1, self.move_history)
-                    enemy_player.receive_reward(-1, self.move_history)
+                    player.receive_reward(REWARD_WIN, self.move_history)
+                    enemy_player.receive_reward(REWARD_LOSS, self.move_history)
                     message = f"Checkmate - ({Colour.string(colour)}) has captured the enemy's king"
 
 
@@ -130,14 +130,14 @@ class ChessGame():
                 if self.is_checked[enemy_player_num]:
                     self.is_checked[enemy_player_num] = False
                     self.is_checkmate[enemy_player_num] = True
-                    player.receive_reward(1, self.move_history)
-                    enemy_player.receive_reward(-1, self.move_history)
+                    player.receive_reward(REWARD_WIN, self.move_history)
+                    enemy_player.receive_reward(REWARD_LOSS, self.move_history)
                     message = f"({Colour.string(enemy_colour)}) is checked and does not have any available moves"
                 else:
                     self.is_checkmate[player_num]       = True
                     self.is_checkmate[enemy_player_num] = True
-                    player.receive_reward(0, self.move_history)
-                    enemy_player.receive_reward(0, self.move_history)
+                    player.receive_reward(REWARD_DRAW, self.move_history)
+                    enemy_player.receive_reward(REWARD_DRAW, self.move_history)
                     message = f"({Colour.string(enemy_colour)}) is not checked and does not have any available moves - automatic stalemate"
 
         # Record the move in the move history
@@ -150,5 +150,5 @@ class ChessGame():
             return message
 
 
-        # Reward of moves generally is 0 - Reward of win is +1 - Reward of loss is -1 - Reward of draw is 0
-        player.receive_reward(0, self.move_history)
+        # # Reward of moves generally is 0 - Reward of win is +1 - Reward of loss is -1 - Reward of draw is 0
+        # player.receive_reward(0, self.move_history)

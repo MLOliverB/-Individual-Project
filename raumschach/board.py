@@ -331,9 +331,9 @@ class ChessBoard:
         if all(is_checked):
             s += "++"
         elif is_checked[0]:
-            s += "+w"
+            s += "+"
         elif is_checked[1]:
-            s += "+b"
+            s += "+"
         elif all(is_checkmate):
             s += " ½-½"
         elif any(is_checkmate):

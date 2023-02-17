@@ -3,6 +3,10 @@ import numpy as np
 from raumschach.board import ChessBoard
 from raumschach.figures import FIGURE_ID_MAP, Colour, Pawn
 
+REWARD_WIN = 1
+REWARD_DRAW = 0
+REWARD_LOSS = -1
+
 class BoardState():
 
     def __init__(self, turn_no: int, colour, board_a: np.ndarray, passives: np.ndarray, captures: np.ndarray, no_progress_count: int, state_repetition_count: int, state_repetition_map: dict[bytes, int]) -> None:
@@ -15,6 +19,9 @@ class BoardState():
         self.state_repetition_count = state_repetition_count
         self.state_repetition_map = state_repetition_map
 
+    def simplify(self):
+        return SimpleBoardState(self.turn, self.board_a.copy(), self.colour, self.no_progress_count, self.state_repetition_count, self.state_repetition_map)
+
     @staticmethod
     def game_setup(board_size: int, setup: list[str]) -> 'BoardState':
         board_a = ChessBoard.init(board_size, setup)
@@ -24,7 +31,7 @@ class BoardState():
         return BoardState(0, Colour.WHITE, board_a, passives, captures, 0, 1, state_repetition_map)
 
     @staticmethod
-    def move(board_state: 'BoardState', move: np.ndarray) -> 'BoardState':
+    def move(board_state: 'BoardState', move: np.ndarray, simple=False) -> 'BoardState':
         board_a = ChessBoard.move(board_state.board_a, move)
         colour = board_state.colour*-1
 
@@ -32,8 +39,18 @@ class BoardState():
         no_progress_count = board_state.no_progress_count + 1
         if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
             no_progress_count = 0
-        elif np.any(np.all(move == board_state.captures, axis=1)): # A piece was captures
+        elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
             no_progress_count = 0
+        # if simple:
+        #     if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
+        #         no_progress_count = 0
+        #     elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
+        #         no_progress_count = 0
+        # else:
+        #     if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
+        #         no_progress_count = 0
+        #     elif np.any(np.all(move == board_state.captures, axis=1)): # A piece was captured
+        #         no_progress_count = 0
 
         # Update state repetition rule
         state_repetition_map = board_state.state_repetition_map.copy()
@@ -43,9 +60,11 @@ class BoardState():
         else:
             state_repetition_map[hash_val] = 1
 
-        passives, captures = ChessBoard.get_passives_captures(board_a, colour)
-
-        return BoardState(board_state.turn+1, colour, board_a, passives, captures, no_progress_count, state_repetition_map[hash_val], state_repetition_map)
+        if simple:
+            return SimpleBoardState(board_state.turn+1, board_a, colour, no_progress_count, state_repetition_map[hash_val], state_repetition_map)
+        else:
+            passives, captures = ChessBoard.get_passives_captures(board_a, colour)
+            return BoardState(board_state.turn+1, colour, board_a, passives, captures, no_progress_count, state_repetition_map[hash_val], state_repetition_map)
 
     @staticmethod
     def is_legal_move(board_state: 'BoardState', move: np.ndarray) -> bool:
@@ -58,5 +77,5 @@ class BoardState():
             return False
 
 class SimpleBoardState(BoardState):
-    def __init__(self, cube, colour, no_progress_count, state_repetition):
-        super.__init__(cube, colour, None, None, no_progress_count, state_repetition)
+    def __init__(self, turn_no, cube, colour, no_progress_count, state_repetition, state_repetition_map):
+        super().__init__(turn_no, colour, cube, None, None, no_progress_count, state_repetition, state_repetition_map)
