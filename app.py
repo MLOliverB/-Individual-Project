@@ -17,9 +17,9 @@ from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_fu
 # winner = game.play()
 
 model = ValueNN(5, len(FIGURES), [ fig.id for fig in FIGURES ])
-player = AlphaBetaTreeSearchPlayer(search_depth=2, value_function=model.get_board_state_value_function())
+player = AlphaBetaTreeSearchPlayer(search_depth=2, value_function=model.get_board_state_value_function("cuda"))
 # # player = AlphaBetaPlayer(search_depth=2)
-# game = ChessGame(player, RandomPlayer(), 5).play()
+game = ChessGame(player, RandomPlayer(), 5).play()
 
 
 # test_network("C:/Users/Oliver/Desktop/UofG/University-of-Glasgow/Codebases/Lvl4_COMPSCI4025P_Individual-Project-H/Individual-Project/res/NN_RL/pre-train/model_49.ptm", 5, tree_search=True, num_test=5)
