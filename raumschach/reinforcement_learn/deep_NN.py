@@ -65,7 +65,8 @@ class ValueNN(nn.Module):
         def get_values(simple_board_state: 'SimpleBoardState', moves: np.ndarray):
             self.eval()
             board_input, meta_data_input = self.sparsify_moves(simple_board_state, moves)
-            board_input, meta_data_input = board_input.float().to(device), meta_data_input.float().to(device)
+            print(device)
+            board_input, meta_data_input = board_input.to(device).float(), meta_data_input.to(device).float()
             vals = self(board_input, meta_data_input)
             return vals[:, 0].detach().numpy()
             print(self(board_input, meta_data_input).shape)
