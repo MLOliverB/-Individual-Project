@@ -143,8 +143,8 @@ class ChessGame():
         # Record the move in the move history
         self.move_history.append(ChessBoard.record_move(prev_board_state.board_a, self.board_state.board_a, action, self.is_checked, self.is_checkmate))
 
-        render_board_ascii(self.board_state.board_a)
-        print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
+        # render_board_ascii(self.board_state.board_a)
+        # print(f"Total Moves: {('('+str(len(self.move_history))+')').ljust(5)} | Most recent moves: ", " <-- ".join([hist.center(15, ' ') for hist in self.move_history[-1: -6: -1]]))
 
         if message:
             return message

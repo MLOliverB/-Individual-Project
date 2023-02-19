@@ -190,7 +190,6 @@ class MiniMaxTreeSearchPlayer(Player):
         if random_move:
             best_move = moves[self.rng.integers(0, moves.shape[0])]
         else:
-            # best_move, best_value = self._tree_search(0, self.search_depth, board_state.board_a, moves, board_state.colour)
             best_move, best_value = self._tree_search(0, self.search_depth, board_state, player_colour=board_state.colour)
         super().step_memory(board_state, best_move)
         return best_move
@@ -204,14 +203,8 @@ class MiniMaxTreeSearchPlayer(Player):
         if King.id*player_colour*-1 not in simple_board_state.board_a: # Player has won - terminal condition
             return (None, self.inf)
         
-        # if depth == max_depth: # End of search tree - terminal condition
-        #     return (None, self.value_function(simple_board_state))
-
-        # safe_moves = ChessBoard.get_safe_moves
         passives, captures = ChessBoard.get_passives_captures(simple_board_state.board_a, simple_board_state.colour, simulate_safe_moves=True)
         safe_moves = np.concatenate((passives, captures), axis=0)
-
-        # safe_moves, next_unsafe_moves = ChessBoard.get_safe_moves_simulated(simple_board_state.board_a, unsafe_moves, simple_board_state.colour)
 
         if safe_moves.shape[0] == 0: # No moves to compute - terminal conditions
             return (None, DRAW_STATE_VALUE) # TODO: What should be the right board value for this?
@@ -220,27 +213,21 @@ class MiniMaxTreeSearchPlayer(Player):
 
         selected_vals = None
         selected_moves = None
-        if player_colour == simple_board_state.colour: # Maximize
-            sorted_ixs = np.argsort(move_values)[::-1][0:10]
+        if player_colour == simple_board_state.colour and self.play_to_lose: # Minimize
+            sorted_ixs = np.argsort(move_values)[0:self.branching_factor]
             selected_vals = move_values[sorted_ixs]
             selected_moves = safe_moves[sorted_ixs]
-        else: # Minimize
-            sorted_ixs = np.argsort(move_values)[0:10]
+        else: # Maximize
+            sorted_ixs = np.argsort(move_values)[::-1][0:self.branching_factor]
             selected_vals = move_values[sorted_ixs]
             selected_moves = safe_moves[sorted_ixs]
-
-        # print(move_values)
-        # print(np.argsort(move_values))
-        # print(np.argsort(move_values)[::-1])
-        # print(np.argsort(move_values)[::-1][0:10])
-        # print(selected_moves)
-
-        # raise Exception()
 
         if depth+1 == max_depth:
-            ixs = np.argmax(selected_vals, keepdims=True) if player_colour == simple_board_state.colour else np.argmin(selected_vals, keepdims=True)
-            # print(selected_vals)
-            # print(ixs)
+            ixs = None
+            if player_colour == simple_board_state.colour and self.play_to_lose:
+                ixs = np.argmin(selected_vals, keepdims=True)
+            else:
+                ixs = np.argmax(selected_vals, keepdims=True)
             rng_ix = self.rng.choice(ixs)
             return (selected_moves[rng_ix], selected_vals[rng_ix])
         else:
@@ -248,39 +235,14 @@ class MiniMaxTreeSearchPlayer(Player):
             for i in range(selected_moves.shape[0]):
                 move = selected_moves[i]
                 vals[i] = self._tree_search(depth+1, max_depth, BoardState.move(simple_board_state, move, simple=True), player_colour)[1]
+            if player_colour == simple_board_state.colour and self.play_to_lose:
+                ixs = np.argmin(vals, keepdims=True)
+            else:
+                ixs = np.argmax(vals, keepdims=True)
+
             ixs = np.argmax(vals, keepdims=True) if player_colour == simple_board_state.colour else np.argmin(vals, keepdims=True)
             rng_ix = self.rng.choice(ixs)
-            # print(selected_moves)
-            # print(vals)
-            # print(ixs)
-            # print(rng_ix)
             return (selected_moves[rng_ix], vals[rng_ix])
-
-        move_values = None
-        if depth+1 == max_depth:
-            move_values = self.value_function(simple_board_state, safe_moves)
-        else:
-            move_values = np.full(safe_moves.shape[0], DRAW_STATE_VALUE)
-            for i in range(safe_moves.shape[0]):
-                move = safe_moves[i]
-                sbs = BoardState.move(simple_board_state, move, simple=True)
-                move_values[i] = self._tree_search(depth+1, max_depth, sbs, next_unsafe_moves[tuple(move)])[1]
-
-        best_move_value = None
-        best_moves_bool_a = None
-        colour = simple_board_state.colour
-        white = Colour.WHITE
-        black = Colour.BLACK
-        if (colour == white and not self.play_to_lose) or (colour == black and self.play_to_lose):
-            best_move_value = np.max(move_values)
-            best_moves_bool_a = np.isclose(move_values, best_move_value) #move_values == best_move_value
-        else:
-            best_move_value = np.min(move_values)
-            best_moves_bool_a = np.isclose(move_values, best_move_value) #move_values == best_move_value
-
-        best_moves = safe_moves[best_moves_bool_a]
-        single_best_move = best_moves[self.rng.integers(0, best_moves.shape[0])]
-        return (single_best_move, best_move_value)
 
     @staticmethod
     def _get_std_val_func():
@@ -294,7 +256,11 @@ class MiniMaxTreeSearchPlayer(Player):
                 value_board = vectorized_value_transform(sbs.board_a)
                 value_board[np.isinf(value_board)] = 0
                 vals.append(np.sum(value_board))
-            return np.array(vals)
+            vals_a = np.array(vals)
+            if simple_board_state.colour == Colour.BLACK:
+                return vals_a * -1
+            else:
+                return vals_a
 
         return _std_val_func
 
@@ -371,6 +337,7 @@ class AlphaBetaTreeSearchPlayer(Player):
                         break # beta cutoff
                     alpha = max(alpha, best_value)
                 else:
+                    value = value * -1
                     if value < best_value:
                         best_value = value
                         best_moves = [move]
@@ -393,6 +360,9 @@ class AlphaBetaTreeSearchPlayer(Player):
         def _std_val_func(simple_board_state: 'SimpleBoardState') -> int:
             value_board = vectorized_value_transform(simple_board_state.board_a)
             value_board[np.isinf(value_board)] = 0
-            return np.sum(value_board)
+            if simple_board_state.colour == Colour.BLACK:
+                return -1 * np.sum(value_board)
+            else:
+                return np.sum(value_board)
 
         return _std_val_func

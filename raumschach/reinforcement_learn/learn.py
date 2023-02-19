@@ -117,59 +117,26 @@ def train_reward_RL(cb_size, disk_path):
 
     model = torch.load(disk_path, map_location=torch.device('cpu')).to(device)
 
+
     for i in range(50000):
-        print(f"\n\n\nPre-train Iteration {i}")
+        print(f"Iteration {i}")
         white_player, black_player = None, None
 
         players = [
-            (RandomPlayer(memory=memory), RandomPlayer(memory=memory)),
             (RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)),
-            (RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory)),
-            (AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory), NNPlayer(model, device)),
-            (RandomPlayer(memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=30, value_function=model.get_board_state_moves_value_function(device))),
+            (RandomPlayer(memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, value_function=model.get_board_state_moves_value_function(device))),
             (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, value_function=model.get_board_state_moves_value_function(device)))
         ]
         probas = normalize(np.array([
-            1,
-            15,
-            8,
-            0.5,
-            10,
-            6
+            0.05,
+            0.1,
+            0.85,
         ]))
-
-        # rng.choice(np.arange(0, len(players)), p=probas)
 
         if rng.choice([True, False]):
             white_player, black_player = players[rng.choice(np.arange(0, len(players)), p=probas)]
         else:
             black_player, white_player = players[rng.choice(np.arange(0, len(players)), p=probas)]
-
-        # white_player, black_player = tuple(rng.choice(rng.choice([
-        #     (RandomPlayer(memory=memory), RandomPlayer(memory=memory))
-        #     (RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)),
-        #     (RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory)),
-        #     (AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory), NNPlayer(model, device)),
-        #     (RandomPlayer(memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=30, value_function=model.get_board_state_moves_value_function(device))),
-        #     (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, value_function=model.get_board_state_moves_value_function(device)))
-        # ], p=normalize(np.array([
-        #     1,
-        #     15,
-        #     8,
-        #     0.5,
-        #     10,
-        #     8
-        # ]))), size=2, replace=False))
-        # # if i%40 == 0:
-
-        # if i%4 == 0:
-        #     white_player, black_player = AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), RandomPlayer(memory=memory)
-        # elif i%4 == 1:
-        #     white_player, black_player = RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)
-        # elif i%4 == 2:
-        #     white_player, black_player = AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory), RandomPlayer(memory=memory)
-        # else:
-        #     white_player, black_player = RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=True, memory=memory)
 
         print(white_player, black_player)
         game = ChessGame(white_player, black_player, cb_size)
@@ -192,10 +159,6 @@ def train_reward_RL(cb_size, disk_path):
                     target_val = -0.01
                 elif max_ix == 2: # Frequently losing
                     target_val = -1
-
-                # board_stats = np.array([stats.win_count, stats.draw_count, stats.loss_count])
-                # state_values = np.array([1, -0.1, -1])
-                # target_val = np.dot(board_stats, state_values)/np.sum(board_stats)
                 
                 input_target_lst.append((tensor_board, tensor_meta_data, torch.tensor(target_val, dtype=tensor_board.dtype)))
             memory.clear()
