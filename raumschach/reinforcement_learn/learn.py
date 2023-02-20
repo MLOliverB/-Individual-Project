@@ -125,12 +125,16 @@ def train_reward_RL(cb_size, disk_path):
         players = [
             (RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)),
             (RandomPlayer(memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device))),
+            (AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device))),
+            (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.2, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.2, value_function=model.get_board_state_moves_value_function(device))),
             (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device)))
         ]
         probas = normalize(np.array([
             0.05,
             0.1,
-            0.85,
+            0.1,
+            0.3,
+            0.45,
         ]))
 
         if rng.choice([True, False]):
