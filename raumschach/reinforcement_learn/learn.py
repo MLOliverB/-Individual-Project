@@ -112,7 +112,7 @@ def learn_RL(cb_size):
             os.makedirs(dir_path, exist_ok=True)
             torch.save(model, dir_path + fn)
 
-def train_reward_RL(cb_size, disk_path):
+def train_reward_RL(cb_size, disk_path, save_dir=None):
     rng, device, model, optimizer, memory = network_setup(cb_size)
 
     model = torch.load(disk_path, map_location=torch.device('cpu')).to(device)
@@ -124,18 +124,33 @@ def train_reward_RL(cb_size, disk_path):
 
         players = [
             (RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)),
-            (RandomPlayer(memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device))),
-            (AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device))),
-            (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.2, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.2, value_function=model.get_board_state_moves_value_function(device))),
-            (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device)))
+            (RandomPlayer(memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0, value_function=model.get_board_state_moves_value_function(device))),
+            (AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.25, value_function=model.get_board_state_moves_value_function(device))),
+            (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.05, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.5, value_function=model.get_board_state_moves_value_function(device))),
+            (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0, value_function=model.get_board_state_moves_value_function(device)))
         ]
         probas = normalize(np.array([
             0.05,
-            0.1,
-            0.1,
-            0.3,
+            0.05,
+            0.4,
             0.45,
+            0.05,
         ]))
+
+        # players = [
+        #     (RandomPlayer(memory=memory), AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory)),
+        #     (RandomPlayer(memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device))),
+        #     (AlphaBetaPlayer(search_depth=2, play_to_lose=False, memory=memory), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device))),
+        #     (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.2, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.2, value_function=model.get_board_state_moves_value_function(device))),
+        #     (MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device)), MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=10, random_action_p=0.02, value_function=model.get_board_state_moves_value_function(device)))
+        # ]
+        # probas = normalize(np.array([
+        #     0.05,
+        #     0.1,
+        #     0.1,
+        #     0.3,
+        #     0.45,
+        # ]))
 
         if rng.choice([True, False]):
             white_player, black_player = players[rng.choice(np.arange(0, len(players)), p=probas)]
@@ -171,6 +186,8 @@ def train_reward_RL(cb_size, disk_path):
 
         if i%100 == 0:
             dir_path = "res/NN_RL/reward-train/"
+            if save_dir:
+                dir_path = save_dir
             fn = f"model_{i//100}.ptm"
             os.makedirs(dir_path, exist_ok=True)
             torch.save(model, dir_path + fn)
