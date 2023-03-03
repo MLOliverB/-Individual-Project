@@ -169,15 +169,23 @@ def train_reward_RL(cb_size, disk_path, save_dir=None):
                 tensor_board, tensor_meta_data = tensor_board.float().to(device), tensor_meta_data.float().to(device)
 
                 board_stats = np.array([stats.win_count, stats.draw_count, stats.loss_count])
-                max_ix = np.argmax(board_stats)
 
                 target_val = None
-                if max_ix == 0: #Frequently winning
+                if board_stats[1] == np.sum(board_stats): # This board state only draws
+                    target_val = - 0.01
+                elif board_stats[0] >= board_stats[2]: # This board state has potential for winning
                     target_val = 1
-                elif max_ix == 1: #Frequently drawing
-                    target_val = -0.01
-                elif max_ix == 2: # Frequently losing
+                else: # This board state is losing very frequently
                     target_val = -1
+
+                # target_val = None
+                # max_ix = np.argmax(board_stats)
+                # if max_ix == 0: #Frequently winning
+                #     target_val = 1
+                # elif max_ix == 1: #Frequently drawing
+                #     target_val = -0.01
+                # elif max_ix == 2: # Frequently losing
+                #     target_val = -1
                 
                 input_target_lst.append((tensor_board, tensor_meta_data, torch.tensor(target_val, dtype=tensor_board.dtype)))
             memory.clear()
