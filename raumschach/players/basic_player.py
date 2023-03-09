@@ -47,7 +47,6 @@ class RandomPlayer(Player):
     def receive_reward(self, reward_value, move_history):
         return super().commit_memory(reward_value)
 
-# TODO Refactor console player to fit new moves style
 class ConsolePlayer(Player):
     def __init__(self, memory=None):
         super().__init__(memory=memory)
