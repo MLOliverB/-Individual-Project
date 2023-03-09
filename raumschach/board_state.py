@@ -76,6 +76,26 @@ class BoardState():
         else:
             return False
 
+    @staticmethod
+    def get_matching_passives_captures(board_state: 'BoardState', from_coord, to_coord=None):
+        if to_coord:
+            is_in_passives = np.any(np.all(np.array(from_coord) == board_state.passives[:, 2:5], axis=1) & np.all(np.array(to_coord) == board_state.passives[:, 5:8], axis=1))
+            is_in_captures = np.any(np.all(np.array(from_coord) == board_state.captures[:, 2:5], axis=1) & np.all(np.array(to_coord) == board_state.captures[:, 5:8], axis=1))
+
+            if is_in_passives or is_in_captures:
+                arr = board_state.passives if is_in_passives else board_state.captures
+                return arr[np.all(np.array(from_coord) == arr[:, 2:5], axis=1) & np.all(np.array(to_coord) == arr[:, 5:8], axis=1)][0]
+            else:
+                return None
+        else:
+            passive_matches = board_state.passives[np.all(np.array(from_coord) == board_state.passives[:, 2:5], axis=1)]
+            capture_matches = board_state.captures[np.all(np.array(from_coord) == board_state.captures[:, 2:5], axis=1)]
+
+            if passive_matches.shape[0] == 0 and capture_matches.shape[0] == 0:
+                return None
+            else:
+                return passive_matches, capture_matches
+
 class SimpleBoardState(BoardState):
     def __init__(self, turn_no, cube, colour, no_progress_count, state_repetition, state_repetition_map):
         super().__init__(turn_no, colour, cube, None, None, no_progress_count, state_repetition, state_repetition_map)
