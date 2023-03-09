@@ -57,12 +57,12 @@ def render_figure_moves_ascii(board_a, moves):
     size = board_a.shape[0]
     s = np.array(board_a)
 
-    if moves:
+    if isinstance(moves, tuple):
         passives, captures = moves
-        passive_pieces, passive_coords = list(zip(*passives))
-        capture_pieces, capture_coords = list(zip(*captures))
+        passive_coords = [ tuple(passives[i, 5:8]) for i in range(passives.shape[0]) ]
+        capture_coords = [ tuple(captures[i, 5:8]) for i in range(captures.shape[0]) ]
     else:
-        passive_pieces, passive_coords, capture_pieces, capture_coords = [], [], [], []
+        passive_coords, capture_coords = [], []
 
     for pos in [(i, j, k) for i in range(size) for j in range(size) for k in range(size)]:
         if s[pos] in FIGURE_ID_MAP:
