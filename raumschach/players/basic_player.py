@@ -49,59 +49,141 @@ class RandomPlayer(Player):
 
 # TODO Refactor console player to fit new moves style
 class ConsolePlayer(Player):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, memory=None):
+        super().__init__(memory=memory)
 
     def send_action(self, board_state: BoardState):
-        colour_str = "White" if board_state.colour == Colour.WHITE else "Black"
-        action = self._get_input(board_state, colour_str)
-        return action
-
-    def _get_input(self, board_state: BoardState, colour_str):
         render_board_ascii(board_state.board_a)
-        action_input = input(f"(Move {colour_str}) >> ")
+        move = self._get_input(board_state)
+        super().step_memory(board_state, move)
+        return move
+
+    def _get_input(self, board_state: BoardState):
+        txt_col = "White" if board_state.colour == Colour.WHITE else "Black"
+        action_input = input(f"(Move {txt_col}) >> ")
         action_input_split = action_input.split(' ')
-        len_action_input_split = len(action_input_split)
-        if len_action_input_split == 1:
-            pos_coord = None
+
+        coord1 = None
+        coord2 = None
+
+        if len(action_input_split) == 1:
             try:
-                pos_coord = ChessBoard.get_pos_coord(action_input_split[0])
+                coord1 = ChessBoard.get_pos_coord(action_input_split[0])
             except:
-                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-            if pos_coord != None:
-                render_figure_moves_ascii(board_state.board_a, ChessBoard.get_pos_coord(action_input))                
-            return self._get_input(board_state, colour_str)
-        elif len_action_input_split == 2:
-            pos_coord1 = None
-            pos_coord2 = None
+                coord1 = -1
+        elif len(action_input_split) == 2:
             try:
-                pos_coord1 = ChessBoard.get_pos_coord(action_input_split[0])
-                pos_coord2 = ChessBoard.get_pos_coord(action_input_split[1])
+                coord1 = ChessBoard.get_pos_coord(action_input_split[0])
             except:
-                print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-            if pos_coord1 != None and pos_coord2 != None:
-                pos_coord1_a = np.array(pos_coord1)
-                pos_coord2_a = np.array(pos_coord2)
-                if pos_coord1_a not in board_state.passives[:, 2:5] and pos_coord1_a not in board_state.captures[:, 2:5]:
-                    print("Invalid input - You cannot move the piece at the specified position")
-                    print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                    return self._get_input(board_state, colour_str)
+                coord1 = -1
+            try:
+                coord2 = ChessBoard.get_pos_coord(action_input_split[1])
+            except:
+                coord2 = -1
+
+        if coord1 == -1 or coord2 == -1:
+            # One of the positions could not be parsed
+            print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
+            print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+            render_board_ascii(board_state.board_a)
+            return self._get_input(board_state)
+        else:
+            # Check if coord1 points to ally piece
+            if not board_state.board_a[coord1]*board_state.colour > 0:
+                print("The given position does not belong to an ally piece")
+                render_board_ascii(board_state.board_a)
+                return self._get_input(board_state)
+            else:
+                if coord2 == None:
+                    # Only one coord is given - display available moves for that piece
+                    matches = BoardState.get_matching_passives_captures(board_state, coord1)
+                    if isinstance(matches, tuple):
+                        render_figure_moves_ascii(board_state.board_a, matches)
+                        return self._get_input(board_state)
+                    else:
+                        print("The given piece does not have any available moves")
+                        render_board_ascii(board_state.board_a)
+                        return self._get_input(board_state)
                 else:
-                    pos_coord1_passives, pos_coord1_captures = ChessBoard.get_piece_passives_captures(board_state.passives, board_state.captures, pos_coord1)
-                    if pos_coord2 not in pos_coord1_passives[:, 5:8] and pos_coord2 not in pos_coord1_captures[:, 5:8]:
+                    # Check if given move exists and return it
+                    move = BoardState.get_matching_passives_captures(board_state, coord1, coord2)
+                    if isinstance(move, np.ndarray):
+                        return move
+                    else:
                         print("Invalid input - You cannot move/capture to the specified location")
                         print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
-                        return self._get_input(board_state, colour_str)
-                    else:
-                        return ChessBoard.get_move_from_passives_captures(pos_coord1_passives, pos_coord1_captures, pos_coord1_a, pos_coord2_a)
-            else:
-                return self._get_input(board_state, colour_str)
-        else:
-            print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece (Too many arguments)")
-            print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
-            return self._get_input(board_state, colour_str)
+                        render_board_ascii(board_state.board_a)
+                        return self._get_input(board_state)
+        #     pass
+        # elif coord2 == None:
+        #     matches = BoardState.get_matching_passives_captures(board_state, coord1)
+        #     if isinstance(matches, tuple):
+        #         pass
+        #     else:
+        #         print("I")
+        #         print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
+        #     # Only one position given - Check if player owns position then display moves
+        # else:
+        #     # Both positions given - Check if valid move
+        #     BoardState.get_matching_passives_captures(board_state, coord1, coord2)
+
+
+        #     print("Invalid input - You cannot move the piece at the specified position")
+        #     print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
+
+        #     # if not BoardState.is_legal_move(board_state)
+        #     print("Invalid input - You cannot move/capture to the specified location")
+        #     print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
+
+
+
+        # return None
+
+    # def _get_input(self, board_state: BoardState, colour_str):
+    #     render_board_ascii(board_state.board_a)
+    #     action_input = input(f"(Move {colour_str}) >> ")
+    #     action_input_split = action_input.split(' ')
+    #     len_action_input_split = len(action_input_split)
+    #     if len_action_input_split == 1:
+    #         pos_coord = None
+    #         try:
+    #             pos_coord = ChessBoard.get_pos_coord(action_input_split[0])
+    #         except:
+    #             print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
+    #             print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+    #         if pos_coord != None:
+    #             render_figure_moves_ascii(board_state.board_a, ChessBoard.get_pos_coord(action_input))                
+    #         return self._get_input(board_state, colour_str)
+    #     elif len_action_input_split == 2:
+    #         pos_coord1 = None
+    #         pos_coord2 = None
+    #         try:
+    #             pos_coord1 = ChessBoard.get_pos_coord(action_input_split[0])
+    #             pos_coord2 = ChessBoard.get_pos_coord(action_input_split[1])
+    #         except:
+    #             print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece")
+    #             print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+    #         if pos_coord1 != None and pos_coord2 != None:
+    #             pos_coord1_a = np.array(pos_coord1)
+    #             pos_coord2_a = np.array(pos_coord2)
+    #             if pos_coord1_a not in board_state.passives[:, 2:5] and pos_coord1_a not in board_state.captures[:, 2:5]:
+    #                 print("Invalid input - You cannot move the piece at the specified position")
+    #                 print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
+    #                 return self._get_input(board_state, colour_str)
+    #             else:
+    #                 pos_coord1_passives, pos_coord1_captures = ChessBoard.get_piece_passives_captures(board_state.passives, board_state.captures, pos_coord1)
+    #                 if pos_coord2 not in pos_coord1_passives[:, 5:8] and pos_coord2 not in pos_coord1_captures[:, 5:8]:
+    #                     print("Invalid input - You cannot move/capture to the specified location")
+    #                     print("input a single board position (e.g. Aa1) to display the moves of a chess piece")
+    #                     return self._get_input(board_state, colour_str)
+    #                 else:
+    #                     return ChessBoard.get_move_from_passives_captures(pos_coord1_passives, pos_coord1_captures, pos_coord1_a, pos_coord2_a)
+    #         else:
+    #             return self._get_input(board_state, colour_str)
+    #     else:
+    #         print("Invalid input - Either input a single board position (e.g. Aa1) to display the moves of a chess piece (Too many arguments)")
+    #         print("              - Or input two board positions (e.g. Aa1 Ab1) to move the piece from the first position to the second")
+    #         return self._get_input(board_state, colour_str)
 
     def receive_reward(self, reward_value, move_history):
-        return super().receive_reward(reward_value, move_history)
+        return super().commit_memory(reward_value)

@@ -14,7 +14,10 @@ from raumschach.players.neural_net_player import MoveValueClassifierPlayer
 from raumschach.reinforcement_learn.deep_NN import ValueNN
 from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function, test_network, train_reward_RL
 
-train_reward_RL(5, sys.argv[1], save_dir=sys.argv[2])
+ChessGame(ConsolePlayer(), RandomPlayer(), 5).play()
+
+""" Function to continue training a pre-trained neural network using a reward-based function """
+# train_reward_RL(5, sys.argv[1], save_dir=sys.argv[2])
 
 # game = ChessGame(AlphaBetaPlayer(search_depth=4, play_to_lose=True), AlphaBetaPlayer(search_depth=4), 5)
 # winner = game.play()
