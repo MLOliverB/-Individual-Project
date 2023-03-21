@@ -32,6 +32,9 @@ class MiniMaxPlayer(Player):
     def receive_reward(self, reward_value, move_history):
         return super().commit_memory(reward_value)
 
+    def __str__(self) -> str:
+        return f"MiniMax Player (Piece-Value-Function, search_depth={self.search_depth})"
+
     def _recursive_minimax(self, depth, max_depth, board_a: np.ndarray, unsafe_moves, current_colour):
         if King.id*Colour.WHITE not in board_a: # Black has won - terminal condition
             return (None, self.neg_inf)
@@ -92,6 +95,9 @@ class AlphaBetaPlayer(Player):
 
     def receive_reward(self, reward_value, move_history):
         return super().commit_memory(reward_value)
+
+    def __str__(self) -> str:
+        return f"AlphaBeta Player (Piece-Value-Function, search_depth={self.search_depth}, play_to_lose={self.play_to_lose})"
 
     def _recursive_alphabeta(self, depth, max_depth, alpha, beta, board_a: np.ndarray, unsafe_moves, current_colour):
         # White is alpha (maximizing)
@@ -162,9 +168,10 @@ class AlphaBetaPlayer(Player):
             return (best_move, best_value)
 
 class MiniMaxTreeSearchPlayer(Player):
-    def __init__(self, search_depth=1, branching_factor=500, random_action_p=0.0, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState', np.ndarray], np.ndarray] = None):
+    def __init__(self, search_depth=1, branching_factor=500, random_action_p=0.0, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState', np.ndarray], np.ndarray] = None, value_function_name=""):
         super().__init__(memory)
 
+        self.value_function_name = value_function_name
         self.play_to_lose = play_to_lose
         self.search_depth = search_depth
         self.inf = np.inf
@@ -196,6 +203,9 @@ class MiniMaxTreeSearchPlayer(Player):
 
     def receive_reward(self, reward_value, move_history):
         return super().commit_memory(reward_value)
+
+    def __str__(self) -> str:
+        return f"MiniMax TreeSearch Player (Value Function={self.value_function_name}, search_depth={self.search_depth}, branching_factor={self.branching_factor}, random_action_p={self.random_selection_chance}, play_to_lose={self.play_to_lose})"
 
     def _tree_search(self, depth, max_depth, simple_board_state: 'SimpleBoardState', player_colour):
         if King.id*player_colour not in simple_board_state.board_a: # Player has lost - terminal condition
@@ -265,8 +275,9 @@ class MiniMaxTreeSearchPlayer(Player):
         return _std_val_func
 
 class AlphaBetaTreeSearchPlayer(Player):
-    def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState'], int] = None):
+    def __init__(self, search_depth=1, rand_seed=None, play_to_lose=False, memory=None, value_function : Callable[['SimpleBoardState'], int] = None, value_function_name=""):
         super().__init__(memory)
+        self.value_function_name = value_function_name
         self.search_depth = search_depth
         self.play_to_lose = play_to_lose
 
@@ -291,6 +302,9 @@ class AlphaBetaTreeSearchPlayer(Player):
 
     def receive_reward(self, reward_value: int, move_history: list):
         return super().commit_memory(reward_value)
+
+    def __str__(self) -> str:
+        return f"AlphaBeta TreeSearch Player (Value Function={self.value_function_name}, search_depth={self.search_depth}, play_to_lose={self.play_to_lose})"
 
     def _tree_search(self, depth, max_depth, alpha, beta, simple_board_state: 'SimpleBoardState', unsafe_moves):
         # White is alpha (maximizing)
