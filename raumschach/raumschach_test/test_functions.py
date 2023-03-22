@@ -5,8 +5,9 @@ from raumschach.raumschach_game.engine.game import ChessGame
 from raumschach.raumschach_learn.learn import network_setup
 
 def load_model(disk_path):
-    rng, device, _, optimizer, memory = network_setup(5)
-    model = torch.load(disk_path, map_location=torch.device('cpu')).to(device)
+    rng, device, model, optimizer, memory = network_setup(5)
+    model.load_state_dict(torch.load(disk_path, weights_only=True, map_location=torch.device('cpu')).to(device))
+    # model = torch.load(disk_path, map_location=torch.device('cpu')).to(device)
     return model, device
 
 def test_players(player1, player2, save_dir, fn, num_test=100):
