@@ -8,10 +8,10 @@ from raumschach.raumschach_game.engine.game import ChessGame
 from raumschach.raumschach_game.players.algorithmic_player import AlphaBetaPlayer, MiniMaxTreeSearchPlayer
 from raumschach.raumschach_game.players.basic_player import RandomPlayer
 from raumschach.raumschach_game.players.neural_net_player import NNPlayer
-from raumschach.raumschach_learn.const import DRAW_STATE_VALUE, LOSS_STATE_VALUE, WIN_STATE_VALUE
+from raumschach.reinforcement_learn.const import DRAW_STATE_VALUE, LOSS_STATE_VALUE, WIN_STATE_VALUE
 
-from raumschach.raumschach_learn.deep_NN import ValueNN
-from raumschach.raumschach_learn.replay_memory import StateMemory
+from raumschach.reinforcement_learn.deep_NN import ValueNN
+from raumschach.reinforcement_learn.replay_memory import StateMemory
 
 
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html

@@ -14,7 +14,7 @@ The codebase contains a single python package, `raumschach`. The file structure 
     * The main entry point to start the engine is `game.py` with the `ChessGame` class
   * `players` - Stores the created player agents in different modules, separated by role and complexity
   * `vis` - Contains the module to handle visualisations. The only currently implemented visualisation is printing a given chess board to stdout
-* `raumschach_learn` - Contains modules related to training the neural networks, either through self-supervision or self-play
+* `reinforcement_learn` - Contains modules related to training the neural networks, either through self-supervision or self-play
   * Entry point functions are stored in `learn.py`
   * Since this code was created for the experimentation on a prototype, there is a noticeable amount of duplicate and redundant functions
 * `raumschach_test` - Code to test two player agents against each other. The win, draw, and loss counts are recorded to file once for the players playing for either colour
