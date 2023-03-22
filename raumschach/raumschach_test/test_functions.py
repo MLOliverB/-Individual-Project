@@ -6,7 +6,8 @@ from raumschach.raumschach_learn.learn import network_setup
 
 def load_model(disk_path):
     rng, device, model, optimizer, memory = network_setup(5)
-    model.load_state_dict(torch.load(disk_path, weights_only=True, map_location=torch.device('cpu')).to(device))
+    model.load_state_dict(torch.load(disk_path, weights_only=True, map_location=torch.device('cpu')))
+    model.to(device)
     # model = torch.load(disk_path, map_location=torch.device('cpu')).to(device)
     return model, device
 
