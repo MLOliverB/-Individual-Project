@@ -10,7 +10,7 @@ from raumschach.raumschach_game.engine.board import ChessBoard
 from raumschach.raumschach_game.engine.board_state import BoardState
 from raumschach.raumschach_game.players.player import Player
 
-from raumschach.raumschach_learn.deep_NN import ValueNN
+from raumschach.reinforcement_learn.deep_NN import ValueNN
 
 
 class NNPlayer(Player):

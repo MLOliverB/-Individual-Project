@@ -5,7 +5,7 @@ from raumschach.raumschach_game.engine.board import ChessBoard
 from raumschach.raumschach_game.engine.board_state import BoardState, SimpleBoardState
 
 from raumschach.raumschach_game.players.player import Player
-from raumschach.raumschach_learn.const import DRAW_STATE_VALUE
+from raumschach.reinforcement_learn.const import DRAW_STATE_VALUE
 
 class MiniMaxPlayer(Player):
     def __init__(self, search_depth=1, rand_seed=None, memory=None):
