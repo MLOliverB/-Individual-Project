@@ -1,13 +1,11 @@
 from typing import Callable
-from raumschach.board_state import BoardState, SimpleBoardState
-from raumschach.players.player import Player
-
-from raumschach.board import ChessBoard
-from raumschach.figures import FIGURE_ID_MAP, Colour, King
-
 import numpy as np
+from raumschach.raumschach_game.data.figures import FIGURE_ID_MAP, Colour, King
+from raumschach.raumschach_game.engine.board import ChessBoard
+from raumschach.raumschach_game.engine.board_state import BoardState, SimpleBoardState
 
-from raumschach.reinforcement_learn.const import DRAW_STATE_VALUE
+from raumschach.raumschach_game.players.player import Player
+from raumschach.raumschach_learn.const import DRAW_STATE_VALUE
 
 class MiniMaxPlayer(Player):
     def __init__(self, search_depth=1, rand_seed=None, memory=None):

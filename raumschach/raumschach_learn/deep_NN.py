@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 import numpy as np
+from raumschach.raumschach_game.data.figures import Colour
 
-from raumschach.board_state import BoardState, SimpleBoardState
-from raumschach.figures import Colour
+from raumschach.raumschach_game.engine.board_state import BoardState, SimpleBoardState
 
 class ValueNN(nn.Module):
 

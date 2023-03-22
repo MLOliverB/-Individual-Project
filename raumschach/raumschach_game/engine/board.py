@@ -1,5 +1,6 @@
 import numpy as np
-from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, PROMOTABLE_FIGURES, Colour, King, Pawn
+
+from raumschach.raumschach_game.data.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, PROMOTABLE_FIGURES, Colour, King, Pawn
 
 INITIAL_5_5_BOARD_SETUP = [
     "r Ea5", "n Eb5", "k Ec5", "n Ed5", "r Ee5",

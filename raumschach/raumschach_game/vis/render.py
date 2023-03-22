@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-from raumschach.figures import FIGURE_ID_MAP
+from raumschach.raumschach_game.data.figures import FIGURE_ID_MAP
 
 BOARD_GAP_H = 2
 BOARD_GAP_V = 1

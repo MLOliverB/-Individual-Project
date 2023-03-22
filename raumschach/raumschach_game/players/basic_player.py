@@ -1,11 +1,10 @@
-from raumschach.board_state import BoardState
-from raumschach.players.player import Player
-
-from raumschach.render import render_board_ascii, render_figure_moves_ascii
-from raumschach.board import ChessBoard
-from raumschach.figures import Colour
-
 import numpy as np
+from raumschach.raumschach_game.data.figures import Colour
+from raumschach.raumschach_game.engine.board import ChessBoard
+
+from raumschach.raumschach_game.engine.board_state import BoardState
+from raumschach.raumschach_game.players.player import Player
+from raumschach.raumschach_game.vis.render import render_board_ascii, render_figure_moves_ascii
 
 
 class DummyPlayer(Player):

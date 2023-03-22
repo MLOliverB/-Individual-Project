@@ -1,7 +1,8 @@
 import sys
-from raumschach.players.algorithmic_player import AlphaBetaPlayer, MiniMaxTreeSearchPlayer
-from raumschach.players.basic_player import RandomPlayer
-from raumschach_test.test_functions import load_model, test_players
+from raumschach.raumschach_game.players.algorithmic_player import AlphaBetaPlayer, MiniMaxTreeSearchPlayer
+from raumschach.raumschach_game.players.basic_player import RandomPlayer
+
+from raumschach.raumschach_test.test_functions import load_model, test_players
 
 res_dir = "/mnt/sda/obillich/res/"
 save_dir = "/mnt/sda/obillich/res/test/"

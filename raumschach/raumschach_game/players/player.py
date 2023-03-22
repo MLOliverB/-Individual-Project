@@ -1,10 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
-from raumschach.board_state import REWARD_DRAW, REWARD_LOSS, REWARD_WIN, BoardState
-# from raumschach.game import REWARD_DRAW, REWARD_LOSS, REWARD_WIN
-
-
+from raumschach.raumschach_game.engine.board_state import REWARD_DRAW, REWARD_LOSS, REWARD_WIN, BoardState
 
 class Player(object, metaclass=ABCMeta):
     def __init__(self, memory=None):

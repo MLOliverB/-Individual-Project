@@ -1,7 +1,7 @@
 from collections import deque, namedtuple
 import random
 
-from raumschach.board_state import SimpleBoardState
+from raumschach.raumschach_game.engine.board_state import SimpleBoardState
 
 
 # Transition = namedtuple('Transition',

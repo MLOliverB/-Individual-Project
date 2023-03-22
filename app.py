@@ -1,20 +1,13 @@
-from raumschach.figures import FIGURES
-from raumschach.players.basic_player import *
-from raumschach.players.algorithmic_player import *
-
-from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
-from raumschach.game import ChessGame
-
 import sys
 import datetime
 import numpy as np
 import torch
 import os
 
-from raumschach.players.neural_net_player import MoveValueClassifierPlayer
-from raumschach.reinforcement_learn.deep_NN import ValueNN
-from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function, test_network, train_reward_RL
-from raumschach_test.test_functions import load_model, test_players
+from raumschach.raumschach_game.engine.game import ChessGame
+from raumschach.raumschach_game.players.algorithmic_player import AlphaBetaPlayer, MiniMaxTreeSearchPlayer
+from raumschach.raumschach_game.players.basic_player import ConsolePlayer, RandomPlayer
+from raumschach.raumschach_test.test_functions import load_model
 
 def game_simulator():
     print("[This is only a prototype demonstration - errors and bugs may occur if used improperly]")

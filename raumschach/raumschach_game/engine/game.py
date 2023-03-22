@@ -1,10 +1,10 @@
 import numpy as np
+from raumschach.raumschach_game.data.figures import Colour
 
-from raumschach.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
-from raumschach.board_state import REWARD_DRAW, REWARD_LOSS, REWARD_WIN, BoardState
-from raumschach.figures import FIGURE_ID_MAP, FIGURE_NAME_MAP, Colour, King, Pawn
-from raumschach.players.player import Player
-from raumschach.render import render_board_ascii
+from raumschach.raumschach_game.engine.board import INITIAL_5_5_BOARD_SETUP, ChessBoard
+from raumschach.raumschach_game.engine.board_state import REWARD_DRAW, REWARD_LOSS, REWARD_WIN, BoardState
+from raumschach.raumschach_game.players.player import Player
+from raumschach.raumschach_game.vis.render import render_board_ascii
 
 class IllegalActionException(Exception):
     """ illegal action exception class """

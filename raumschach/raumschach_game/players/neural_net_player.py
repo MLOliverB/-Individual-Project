@@ -5,14 +5,12 @@ from torch import nn
 import numpy as np
 import torch
 import time
+from raumschach.raumschach_game.data.figures import FIGURES
+from raumschach.raumschach_game.engine.board import ChessBoard
+from raumschach.raumschach_game.engine.board_state import BoardState
+from raumschach.raumschach_game.players.player import Player
 
-from raumschach.board import ChessBoard
-
-from raumschach.board_state import BoardState
-from raumschach.figures import FIGURES
-from raumschach.game import REWARD_DRAW, REWARD_LOSS, REWARD_WIN
-from raumschach.players.player import Player
-from raumschach.reinforcement_learn.deep_NN import ValueNN
+from raumschach.raumschach_learn.deep_NN import ValueNN
 
 
 class NNPlayer(Player):

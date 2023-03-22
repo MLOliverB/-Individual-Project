@@ -1,3 +1,0 @@
-Sparse Representation:
-Moves - {(from_piece_id, from_pos): [(to_piece_id_1, to_pos_1), (to_piece_id_2, to_pos_2), ....]} where from_pos & to_pos => (plane, file, rank)
-Time taken for 100 games - 3682.415491s i.e. 36.8s per game on average

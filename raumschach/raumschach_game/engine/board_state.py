@@ -1,7 +1,7 @@
 import numpy as np
+from raumschach.raumschach_game.data.figures import FIGURE_ID_MAP, Colour, Pawn
 
-from raumschach.board import ChessBoard
-from raumschach.figures import FIGURE_ID_MAP, Colour, Pawn
+from raumschach.raumschach_game.engine.board import ChessBoard
 
 REWARD_WIN = 1
 REWARD_DRAW = 0
@@ -41,16 +41,6 @@ class BoardState():
             no_progress_count = 0
         elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
             no_progress_count = 0
-        # if simple:
-        #     if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
-        #         no_progress_count = 0
-        #     elif board_state.board_a[move[5], move[6], move[7]] != 0: # A piece is captured through this move
-        #         no_progress_count = 0
-        # else:
-        #     if FIGURE_ID_MAP[move[0]][0] == Pawn: # A pawn was moved
-        #         no_progress_count = 0
-        #     elif np.any(np.all(move == board_state.captures, axis=1)): # A piece was captured
-        #         no_progress_count = 0
 
         # Update state repetition rule
         state_repetition_map = board_state.state_repetition_map.copy()
