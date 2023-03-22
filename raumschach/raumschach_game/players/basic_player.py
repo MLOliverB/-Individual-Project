@@ -73,15 +73,21 @@ class ConsolePlayer(Player):
         if len(action_input_split) == 1:
             try:
                 coord1 = ChessBoard.get_pos_coord(action_input_split[0])
+                if not ChessBoard.in_bounds(board_state.board_a.shape[0]-1, coord1[0], coord1[1], coord1[2]):
+                    raise Exception("Coordinates out of Bounds")
             except:
                 coord1 = -1
         elif len(action_input_split) == 2:
             try:
                 coord1 = ChessBoard.get_pos_coord(action_input_split[0])
+                if not ChessBoard.in_bounds(board_state.board_a.shape[0]-1, coord1[0], coord1[1], coord1[2]):
+                    raise Exception("Coordinates out of Bounds")
             except:
                 coord1 = -1
             try:
                 coord2 = ChessBoard.get_pos_coord(action_input_split[1])
+                if not ChessBoard.in_bounds(board_state.board_a.shape[0]-1, coord1[0], coord1[1], coord1[2]):
+                    raise Exception("Coordinates out of Bounds")
             except:
                 coord2 = -1
 
