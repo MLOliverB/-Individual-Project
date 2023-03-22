@@ -16,71 +16,71 @@ from raumschach.reinforcement_learn.deep_NN import ValueNN
 from raumschach.reinforcement_learn.learn import learn_RL, learn_simple_value_function, test_network, train_reward_RL
 from raumschach_test.test_functions import load_model, test_players
 
+def game_simulator():
+    print("[This is only a prototype demonstration - errors and bugs may occur if used improperly]")
+    print("Select the following options via number input\n\n")
+
+    white = player_choice("|-| Choose the White player:")
+    print("\n\n")
+    black = player_choice("|-| Choose the Black Player:")
+
+    ChessGame(white, black, 5).play()
+
+def player_choice(text):
+    print(text)
+    print("[1] Interactive Console Player")
+    print("[2] Random Player")
+    print("[3] Tree Search using a simple Piece-Value-Function")
+    print("[4] Tree Search using a Neural Network value function")
+    choice = int(input(">> "))
+
+    if choice == 1:
+        return ConsolePlayer()
+    elif choice == 2:
+        return RandomPlayer()
+    elif choice == 3:
+        return alphabeta_choice()
+    elif choice == 4:
+        return network_choice()
+    else:
+        print("Error: Input not recognized - please try again\n")
+        return player_choice(text)
+
+def search_depth_choice():
+    print("|-| Choose the desired search depth, e.g. 1, 2, ...")
+    print("    (Warning: anything over 3 can take very long to compute!)")
+    depth = int(input(">> "))
+    if depth < 1:
+        print("Error: The search depth must be at least 1!\n")
+        return search_depth_choice()
+    else:
+        return depth
+
+def alphabeta_choice():
+    depth = search_depth_choice()
+
+    print("|-| Should this player have the objective to lose the game?")
+    is_play_to_lose = input("(yes/*) >> ")
+    if is_play_to_lose == "yes":
+        return AlphaBetaPlayer(search_depth=depth, play_to_lose=True)
+    else:
+        return AlphaBetaPlayer(search_depth=depth, play_to_lose=False)
+
+def network_choice():
+    print("|-| Specify the path to the saved Network that you wish to use")
+    net_path = input(">> ")
+    model, device = load_model(net_path)
+    depth = search_depth_choice()
+    return MiniMaxTreeSearchPlayer(search_depth=depth, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name=net_path)
+
+if __name__ == "__main__":
+    game_simulator()
+
+
+
 # ChessGame(ConsolePlayer(), RandomPlayer(), 5).play()
 
-def run_tests(i):
-    if i == 1:
-        test_players(RandomPlayer(), RandomPlayer(), "/mnt/sda/obillich/res/test/", "random_random.txt", num_test=100)
 
-
-    elif i == 2:
-        test_players(RandomPlayer(), AlphaBetaPlayer(search_depth=1), "/mnt/sda/obillich/res/test/", "random_alphabeta-sd1.txt", num_test=100)
-    elif i == 3:
-        test_players(RandomPlayer(), AlphaBetaPlayer(search_depth=2), "/mnt/sda/obillich/res/test/", "random_alphabeta-sd2.txt", num_test=100)
-    elif i == 4:
-        test_players(RandomPlayer(), AlphaBetaPlayer(search_depth=3), "/mnt/sda/obillich/res/test/", "random_alphabeta-sd3.txt", num_test=100)
-
-
-    elif i == 5:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-1/model_365.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=1, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-1_model-365")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-1-model-365-sd1.txt", num_test=100)
-    elif i == 6:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-1/model_365.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-1_model-365")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-1-model-365-sd2.txt", num_test=100)
-    elif i == 7:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-1/model_365.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=3, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-1_model-365")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-1-model-365-sd3.txt", num_test=100)
-
-
-    elif i == 8:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-2/model_206.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=1, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-1_model-206")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-2-model-206-sd1.txt", num_test=100)
-    elif i == 9:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-2/model_206.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-1_model-206")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-2-model-206-sd2.txt", num_test=100)
-    elif i == 10:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-2/model_206.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=3, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-1_model-206")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-2-model-206-sd3.txt", num_test=100)
-
-
-    elif i == 11:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-3/model_163.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=1, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-3_model-163")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-3-model-163-sd1.txt", num_test=100)
-    elif i == 12:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-3/model_163.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=2, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-3_model-163")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-3-model-163-sd2.txt", num_test=100)
-    elif i == 13:
-        model, device = load_model("/mnt/sda/obillich/res/NN_RL/reward-train-3/model_163.ptm")
-        plr = MiniMaxTreeSearchPlayer(search_depth=3, branching_factor=500, random_action_p=0, value_function=model.get_board_state_moves_value_function(device), value_function_name="reward-train-var-3_model-163")
-        test_players(RandomPlayer(), plr, "/mnt/sda/obillich/res/test/", "random_train-3-model-163-sd3.txt", num_test=100)
-
-
-    elif i == 14:
-        test_players(RandomPlayer(), AlphaBetaPlayer(search_depth=1, play_to_lose=True), "/mnt/sda/obillich/res/test/", "random_alphabeta-sd1-lose.txt", num_test=100)
-    elif i == 15:
-        test_players(RandomPlayer(), AlphaBetaPlayer(search_depth=2, play_to_lose=True), "/mnt/sda/obillich/res/test/", "random_alphabeta-sd2-lose.txt", num_test=100)
-    elif i == 16:
-        test_players(RandomPlayer(), AlphaBetaPlayer(search_depth=3, play_to_lose=True), "/mnt/sda/obillich/res/test/", "random_alphabeta-sd3-lose.txt", num_test=100)
-
-run_tests(int(sys.argv[1]))
 
 
 """ Function to continue training a pre-trained neural network using a reward-based function """
