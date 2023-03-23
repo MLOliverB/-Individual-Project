@@ -60,14 +60,24 @@ class ValueNN(nn.Module):
     
         return get_board_state_value
 
-    def get_board_state_moves_value_function(self, device):
-        
-        def get_values(simple_board_state: 'SimpleBoardState', moves: np.ndarray):
-            self.eval()
-            board_input, meta_data_input = self.sparsify_moves(simple_board_state, moves)
-            board_input, meta_data_input = board_input.to(device).float(), meta_data_input.to(device).float()
-            vals = self(board_input, meta_data_input)
-            return vals[:, 0].detach().cpu().numpy()
+    def get_board_state_moves_value_function(self, device, test=False):
+
+        if test:
+            def get_values(simple_board_state: 'SimpleBoardState', moves: np.ndarray):
+                vals = None
+                with torch.no_grad():
+                    self.eval()
+                    board_input, meta_data_input = self.sparsify_moves(simple_board_state, moves)
+                    board_input, meta_data_input = board_input.to(device).float(), meta_data_input.to(device).float()
+                    vals = self(board_input, meta_data_input)
+                return vals[:, 0].detach().cpu().numpy()
+        else:
+            def get_values(simple_board_state: 'SimpleBoardState', moves: np.ndarray):
+                self.eval()
+                board_input, meta_data_input = self.sparsify_moves(simple_board_state, moves)
+                board_input, meta_data_input = board_input.to(device).float(), meta_data_input.to(device).float()
+                vals = self(board_input, meta_data_input)
+                return vals[:, 0].detach().cpu().numpy()
 
         return get_values
 
