@@ -1,0 +1,14 @@
+White: Random Player
+Black: AlphaBeta Player (Piece-Value-Function, search_depth=2, play_to_lose=True)
+White Wins, Draws, Losses
+27, 68, 5
+Black Wins, Draws, Losses
+5, 68, 27
+
+
+White: AlphaBeta Player (Piece-Value-Function, search_depth=2, play_to_lose=True)
+Black: Random Player
+White Wins, Draws, Losses
+6, 71, 23
+Black Wins, Draws, Losses
+23, 71, 6

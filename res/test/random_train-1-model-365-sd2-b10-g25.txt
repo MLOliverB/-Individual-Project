@@ -1,0 +1,14 @@
+White: Random Player
+Black: MiniMax TreeSearch Player (Value Function=reward-train-var-1_model-365, search_depth=2, branching_factor=10, random_action_p=0, play_to_lose=False)
+White Wins, Draws, Losses
+0, 25, 0
+Black Wins, Draws, Losses
+0, 25, 0
+
+
+White: MiniMax TreeSearch Player (Value Function=reward-train-var-1_model-365, search_depth=2, branching_factor=10, random_action_p=0, play_to_lose=False)
+Black: Random Player
+White Wins, Draws, Losses
+0, 25, 0
+Black Wins, Draws, Losses
+0, 25, 0

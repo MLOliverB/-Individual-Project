@@ -1,0 +1,14 @@
+White: Random Player
+Black: Random Player
+White Wins, Draws, Losses
+2, 96, 2
+Black Wins, Draws, Losses
+2, 96, 2
+
+
+White: Random Player
+Black: Random Player
+White Wins, Draws, Losses
+0, 99, 1
+Black Wins, Draws, Losses
+1, 99, 0
