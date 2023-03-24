@@ -4,35 +4,11 @@ import random
 from raumschach.raumschach_game.engine.board_state import SimpleBoardState
 
 
-# Transition = namedtuple('Transition',
-#                         ('board_state', 'move', 'next_board_state', 'reward'))
 
 State_Stats = namedtuple('State_Stats',
                         ('board_state', 'win_count', 'draw_count', 'loss_count')
                         )
 
-# class ReplayMemory(object):
-
-#     size: int
-#     threshold_capacity: int
-
-#     # def __init__(self, capacity) -> None:
-#     #     self.memory = deque([], maxlen=capacity)
-
-#     def __init__(self, threshold_capacity) -> None:
-#         self.memory = deque([])
-#         self.size = 0
-#         self.threshold_capacity = threshold_capacity
-
-#     def push(self, *args) -> None:
-#         self.size += 1
-#         self.memory.append(State_Stats(*args))
-
-#     def sample(self, batch_size) -> list:
-#         self.size -= batch_size
-#         if self.size < 0:
-#             self.size = 0
-#         return random.sample(self.memory, batch_size)
 
 class StateMemory(object):
 

@@ -201,44 +201,6 @@ def train_reward_RL(cb_size, disk_path, save_dir=None):
             torch.save(model, dir_path + fn)
 
 
-# def train_RL_model(cb_size, player_choice_function):
-
-#     rng, device, value_net, optimizer, memory = network_setup(cb_size)
-
-#     training_cycles = 1000
-#     consecutive_training_games = 50
-#     test_games = 30
-
-
-#     counter = [0, 0, 0]
-#     episode_counter = [0, 0, 0]
-#     consec_train_counter = 0
-#     for i in range(1000):
-
-#         white_player, black_player = player_choice_function(rng, value_net, memory, device)
-#         game = ChessGame(white_player, black_player, cb_size)
-            
-#         win_player = game.play()
-
-#         if ally_colour == Colour.WHITE:
-#             counter[1+win_player] += 1
-#             episode_counter[1+win_player] += 1
-#         else:
-#             counter[2-(1+win_player)] += 1
-#             episode_counter[2-(1+win_player)] += 1
-
-#         print(f"Iteration  : {i:5,d} | Wins: {counter[2]} Draws: {counter[1]} Losses: {counter[0]}")
-#         print(f"Intra epoch:       | Wins: {episode_counter[2]} Draws: {episode_counter[1]} Losses: {episode_counter[0]}")
-#         consec_train_counter += 1
-#         if consec_train_counter >= consecutive_training_games:
-#             consec_train_counter = 0
-#             episode_counter = [0, 0, 0]
-#             # Save the current network so it can be compared to later
-#             previous_networks.append(value_net.state_dict())
-#             print("Optimizing...")
-#             optimize_RL_model(value_net, optimizer, memory, device, cb_size)
-
-
 def test_network(disk_path, cb_size, num_test=25, tree_search=False):
     rng, device, _, optimizer, memory = network_setup(cb_size)
     model = torch.load(disk_path, map_location=torch.device('cpu')).to(device)
@@ -327,48 +289,6 @@ def optimize_reward(model, optimizer: optim.Optimizer, device, input_target_lst,
         loss.backward()
         optimizer.step()
     print("\r            ")
-
-
-# def optimize_RL_model(model, optimizer: optim.Optimizer, memory, device, cb_size, batch_size=128):
-#     model.train()
-#     input_target_lst = []
-#     # input_lst = []
-#     # target_val_lst = []
-#     for (board_hash, colour, state_repetition, no_progress), stats in memory.iter():
-#         board_a = ValueNN.reconstruct_chessboard(cb_size, board_hash)
-#         input_tensor = model.sparsify_board_state(board_a, colour, state_repetition, no_progress).float().to(device)
-
-#         win_count = stats.win_count
-#         draw_count = stats.draw_count
-#         loss_count = stats.loss_count
-#         total_count = win_count + draw_count + loss_count
-#         # print(win_count, draw_count, loss_count)
-#         target_val = (LOSS_STATE_VALUE * loss_count + DRAW_STATE_VALUE * draw_count + WIN_STATE_VALUE * win_count) / total_count
-
-#         input_target_lst.append((input_tensor, torch.tensor(target_val, dtype=input_tensor.dtype)))
-
-#     rng = np.random.default_rng()
-#     rng.shuffle(input_target_lst)
-#     while(input_target_lst):
-#         batch, input_target_lst = input_target_lst[:batch_size], input_target_lst[batch_size:]
-
-#         inputs = torch.stack([t[0] for t in batch])
-#         targets = torch.stack([t[1] for t in batch], dim=-1)[:, None]
-#         # print(targets[0])
-
-#         vals = model(inputs)
-
-#         # print(targets.shape)
-#         # print(vals.shape)
-
-#         criterion = nn.SmoothL1Loss()
-#         loss = criterion(vals, targets)
-
-#         optimizer.zero_grad()
-#         loss.backward()
-#         optimizer.step()
-
-#     memory.clear()
 
 
 

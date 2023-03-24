@@ -143,15 +143,8 @@ class MoveValueClassifierPlayer(Player):
         i = 0
         while i < len_moves:
             decoded_moves, legal_probas, vals = self.model(moves[i:i+batch_size])
-            # vals, legal_probas = self.model(moves[i:i+batch_size])
-            # print(legal_probas.shape)
-            # print(decoded_moves.shape)
-            # print(moves[i:i+batch_size].shape)
-            # print(moves[i:i+batch_size, None].shape)
-            # raise Exception("Stop")
 
             decoder_loss = torch.nn.functional.mse_loss(decoded_moves, moves[i:i+batch_size])
-            # class_loss = torch.nn.functional.mse_loss(legal_probas[:, 0], class_vals[i:i+batch_size])
             class_loss = torch.nn.functional.mse_loss(legal_probas, class_vals[i:i+batch_size, None])
 
             self.optimizer.zero_grad()
@@ -175,8 +168,6 @@ class MoveValueClassifierPlayer(Player):
 
         class_vals, moves = [ x[0] for x in all_sparse_moves ], [ x[1] for x in all_sparse_moves ]
 
-        # class_vals = torch.tensor(class_vals, device=self.device)
-        # moves = torch.tensor(moves, device=self.device)
         class_vals = torch.from_numpy(np.array(class_vals, dtype=np.single))
         class_vals = class_vals.to(self.device)
         moves = torch.from_numpy(np.stack(moves, axis=0))
@@ -186,7 +177,6 @@ class MoveValueClassifierPlayer(Player):
 
         numpy_moves = moves.detach().numpy()
         class_vals = class_vals.detach().numpy()
-        # decoded_moves = decoded_moves.detach().numpy()
         legal_probas = legal_probas.detach().numpy()
         vals = vals.detach().numpy()
 
@@ -229,7 +219,6 @@ class MoveValueClassifierPlayer(Player):
         with open(fname, append_write) as f:
             f.write(f"{curr_time},{decoded_loss},{np.average(np.array(legal_proba_lst))},{np.average(np.array(illegal_proba_lst))},{np.average(np.array(legal_val_lst))},{np.average(np.array(illegal_val_lst))}\n")
 
-        # with open(dirname + "Model-" + str(self.cb_size) + "-" + str(curr_time) + ".torchmodel", 'w+') as f:
         torch.save(self.model.state_dict(), dirname + "Model-" + str(self.cb_size) + "-" + str(curr_time) + ".torchmodel")
 
 

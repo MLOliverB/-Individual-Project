@@ -65,7 +65,6 @@ class ChessGame():
         # send the observation (i.e. board state) to the player and receive the corresponding action
         action = player.send_action(self.board_state)
 
-        # TODO Negative reward for doing illegal move
         # check if the action is legal
         if not BoardState.is_legal_move(self.board_state, action):
             raise IllegalActionException(f"The given action '{action}' is not part of the currently legal moves or captures.")
@@ -75,9 +74,6 @@ class ChessGame():
         prev_board_state = self.board_state
         self.board_state = BoardState.move(self.board_state, action)
 
-
-        # prev_board_a = self.chess_board.cube.copy()
-        # ChessBoard.move(self.chess_board.cube, action)
 
         # Update the no progress rule
         if not message: # The game has not yet ended
@@ -107,7 +103,7 @@ class ChessGame():
 
         if not message: # The game has not yet ended
             # Determine whether we have a checkmate
-            if True or self.is_checked[enemy_player_num]: # TODO Ideally this True is obsolete
+            if True or self.is_checked[enemy_player_num]:
                 # The enemy player is under check
                 # Simply check whether the enemy king has been captured i.e. if the king still stands on the board
                 if ChessBoard.is_king_checkmate(self.board_state.board_a, enemy_colour):
@@ -148,7 +144,3 @@ class ChessGame():
 
         if message:
             return message
-
-
-        # # Reward of moves generally is 0 - Reward of win is +1 - Reward of loss is -1 - Reward of draw is 0
-        # player.receive_reward(0, self.move_history)
